@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://df0tumtx47yhg"]
+
+[ext_resource type="Script" uid="uid://eytex4xxespw" path="res://Passenger/PassengerSpawner.gd" id="1_1e00f"]
+
+[node name="PassengerSpawner" type="Marker3D" unique_id=508315875]
+script = ExtResource("1_1e00f")

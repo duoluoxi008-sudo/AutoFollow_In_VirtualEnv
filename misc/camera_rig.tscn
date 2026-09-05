@@ -1,0 +1,18 @@
+[gd_scene format=3 uid="uid://dapvv8brm3oxw"]
+
+[ext_resource type="Script" uid="uid://suqpmr5w0xpk" path="res://misc/orbit_camera.gd" id="1_lciup"]
+[ext_resource type="Environment" uid="uid://fu26fprl3d5v" path="res://environments/default_environment.tres" id="2_gvjva"]
+[ext_resource type="CameraAttributesPhysical" uid="uid://dwd0wmb6shu6" path="res://environments/ca_default_environment.tres" id="3_47bw4"]
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_831d2"]
+
+[node name="CameraRig" type="Node3D" unique_id=426980195]
+script = ExtResource("1_lciup")
+cam_y_offset = 1.0
+
+[node name="SpringArm3D" type="SpringArm3D" parent="." unique_id=635278746]
+shape = SubResource("SphereShape3D_831d2")
+
+[node name="Camera3D" type="Camera3D" parent="SpringArm3D" unique_id=1863717784]
+environment = ExtResource("2_gvjva")
+attributes = ExtResource("3_47bw4")
