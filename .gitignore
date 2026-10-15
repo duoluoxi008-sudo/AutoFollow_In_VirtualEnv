@@ -226,3 +226,9 @@ BluePrint/_superseded_full_scope/AutoFollow_interface_plan.json
 # --- 本地产物 / 临时工作区（不入库）---
 .tmp/
 Export/
+
+# --- RL 训练产物（可重新生成，不入库）---
+rl/logs/
+rl/__pycache__/
+rl/BackUpLog/
+rl/.idea/
