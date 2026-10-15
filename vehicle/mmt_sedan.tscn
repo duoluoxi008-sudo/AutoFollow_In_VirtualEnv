@@ -3,7 +3,6 @@
 [ext_resource type="Script" uid="uid://dvj3nxiibt1gf" path="res://vehicle/mmt_sedan.gd" id="1_3tkd7"]
 [ext_resource type="Script" uid="uid://2c1j0nwkn6oy" path="res://vehicle/mmt_wheel_component.gd" id="2_w1nle"]
 [ext_resource type="Script" uid="uid://dlgxwpy05m780" path="res://vehicle/mmt_engine_component.gd" id="3_f11t7"]
-[ext_resource type="Curve" uid="uid://bl0e8y6sxp8wl" path="res://vehicle/sedan_santana_torque_curve.tres" id="4_2hqnl"]
 [ext_resource type="Script" uid="uid://c4y4ui8rjck22" path="res://vehicle/mmt_gearbox_component.gd" id="4_8ps3r"]
 [ext_resource type="Script" uid="uid://cpysfyfrbohwh" path="res://vehicle/mmt_debug_display_2d.gd" id="5_8ps3r"]
 [ext_resource type="Script" uid="uid://cjr6ntoyfc8ck" path="res://vehicle/mmt_differential_component.gd" id="6_26xap"]
@@ -19,7 +18,7 @@
 [ext_resource type="PackedScene" uid="uid://d1m8osycvwfhl" path="res://vehicle/visuals/santana/TaxiPlateRed.glb" id="15_rslhw"]
 [ext_resource type="Script" uid="uid://cv5ic6ba8duew" path="res://vehicle/taxi/TaxiServiceComponent.gd" id="22_taxisvc"]
 [ext_resource type="Script" uid="uid://bc0q3uwojqa37" path="res://vehicle/taxi/VehicleStateResetter.gd" id="23_taxirst"]
-[ext_resource type="Resource" path="res://vehicle/engine_spec_santana.tres" id="24_engspec"]
+[ext_resource type="Resource" uid="uid://030j8ewa7dc6" path="res://vehicle/engine_spec_santana.tres" id="24_engspec"]
 
 [sub_resource type="PhysicsMaterial" id="PhysicsMaterial_71kbo"]
 
