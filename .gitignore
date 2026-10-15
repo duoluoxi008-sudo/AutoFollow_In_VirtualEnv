@@ -222,3 +222,7 @@ BluePrint/AutoFollow_rl_core_Used_Clearly.json
 BluePrint/_superseded_full_scope/AutoFollow_interface.json
 BluePrint/_superseded_full_scope/AutoFollow_interface.md
 BluePrint/_superseded_full_scope/AutoFollow_interface_plan.json
+
+# --- 本地产物 / 临时工作区（不入库）---
+.tmp/
+Export/
