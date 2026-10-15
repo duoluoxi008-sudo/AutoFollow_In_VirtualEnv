@@ -1,0 +1,107 @@
+extends RewardFunction3D
+class_name WallContactReward
+
+# ============================================================================
+# WallContactReward —— 撞墙惩罚（**接触期间每物理帧**扣分，不是"撞一下扣一次"）
+#
+#     r = -weight × min(当前接触到的墙数, max_contacts_counted)     每帧
+#
+# ## 为什么必须是"每帧"而不是"每事件"
+#
+# 一次性的事件惩罚（碰一下扣 X）对"卡在墙上不动"**没有任何持续压力**：车碰上去、
+# 拿到一次扣分，然后就一直贴着墙，惩罚不再增加。而"每帧都扣"会让**静止不动也在持续
+# 亏分**，于是唯一能停止亏损的行为就是**离开墙**；而车头顶着墙时，唯一能动的方向就是
+# **倒车** ⟹ 这才真正把"学会倒车脱困"变成有利可图的选择。
+#
+# ## 为什么不惩罚"油门在给但车不动"（stuck-push）
+#
+# 那种形状可以被"松开油门"满足 —— 车会安静地趴在那里（不再被扣分），但依然出不去。
+# 接触型惩罚没有这个漏洞：贴着墙就是贴着，不动也照样扣。
+#
+# ## 为什么按物理层过滤
+#
+# 只统计 **墙壁层（layer 2）** 的接触。不过滤的话：
+#   - 乘客走到车边蹭到车（乘客层 3）会被误判成撞墙；
+#   - 轮胎压在地面上（地面层 1）会被误判成撞墙。
+# 两者都会让惩罚变成噪声。project.godot 里 layer_2 就是「墙壁」。
+#
+# ## 量级参考（必须和 rw_step 比）
+#
+# 正常每帧总奖励约 -0.002；而"倒车退出墙"会让直线距离变大，进度项按
+# `rw_progress × Δd / d_0` 扣 —— 以 d_0 = 50 m、倒车 0.1 m/帧算约 -0.006/帧。
+# 取 weight = 0.01 时接触惩罚已**大于**倒车的瞬时代价，所以"倒出去"是净赚的；
+# 贴 100 帧 = -1.0，相对接客 +2.0 / 送达 +5.0 是同一量级，不会盖掉任务奖励。
+#
+# ## 依赖（不满足会静默返回 0）
+#
+# 车辆的 RigidBody3D 必须开 `contact_monitor = true` 且 `max_contacts_reported > 0`，
+# 否则 `get_colliding_bodies()` 拿不到东西（Godot 还会每帧刷警告）。
+# 本组件的 `_resolve_vehicle()` 会先检查这两个开关，没开就直接返回 0 而不是刷屏。
+# ============================================================================
+
+@export_category("权重")
+## 每个接触体、每物理帧的惩罚（"在场税"）
+## ⚠️ 这一项**必须保留**：它只在"贴着"时扣、静止也扣，是唯一让"离开墙"有利可图的机制。
+## 一旦把它换成速度关联的形式，停在墙边（v=0）就不再付代价 ⟹ 等于奖励趴在墙上。
+@export var weight: float = 0.02
+## 撞击的一次性惩罚系数（× 撞击瞬间车速）。默认 0 = 关闭。
+##
+## 这只是"驾驶质量"项（别撞得那么狠），**不是脱困项**：
+##   - 它可以被"慢慢地撞上去"满足 ⟹ 单独使用时会把行为教成"低速蹭墙"，更糟；
+##   - 撞击是**一次性事件**，对"卡住不动"这个状态没有任何持续梯度；
+##   - 所以它只能**叠加**在 weight（在场税）之上，永远不能替换它。
+@export var weight_impact: float = 0.0
+## 单帧最多按几个接触体计罚（夹角处接触数会暴涨，钳一下防止把值打爆）
+@export var max_contacts_counted: int = 2
+## 视为"墙"的物理层。项目里 layer 2 = 墙壁，所以默认只勾第 2 层。
+@export_flags_3d_physics var wall_layer_mask: int = 2
+
+
+## 被注入的出租车控制器
+var car_ref: AITaxiController
+## 上一帧是否在接触（用来检测"接触上升沿"= 撞击发生的那一刻）
+var _was_touching: bool = false
+
+
+#expose
+func get_car_ref(ref_car: AITaxiController) -> void:
+	car_ref = ref_car
+
+
+#expose
+func get_reward() -> float:
+	var v := _resolve_vehicle()
+	if v == null:
+		_was_touching = false
+		return 0.0
+
+	var n := 0
+	for b in v.get_colliding_bodies():
+		if b is CollisionObject3D:
+			if (int((b as CollisionObject3D).collision_layer) & wall_layer_mask) != 0:
+				n += 1
+
+	var touching := n > 0
+	var r := 0.0
+	if touching:
+		r -= weight * float(mini(n, maxi(max_contacts_counted, 1)))
+		# 撞击：只在接触的**上升沿**记一次，按当时车速线性扣（≈冲量）
+		if not _was_touching and weight_impact > 0.0:
+			r -= weight_impact * float(v.linear_velocity.length())
+	_was_touching = touching
+	return r
+
+
+#expose
+func reset() -> void:
+	_was_touching = false
+
+
+## 取本车的刚体；没开接触监测时返回 null（避免每帧刷 Godot 警告）
+func _resolve_vehicle() -> MMTVehicleBody:
+	if car_ref == null or car_ref._vehicle == null or not is_instance_valid(car_ref._vehicle):
+		return null
+	var v := car_ref._vehicle
+	if not v.contact_monitor or v.max_contacts_reported <= 0:
+		return null
+	return v

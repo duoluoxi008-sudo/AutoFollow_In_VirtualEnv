@@ -1,0 +1,123 @@
+[gd_scene format=3 uid="uid://ccqpciqbduday"]
+
+[ext_resource type="Script" uid="uid://b1kwo5htnqcg4" path="res://levels/TrainingArena.gd" id="1_k4aah"]
+[ext_resource type="Script" uid="uid://bve6okfsudmei" path="res://Passenger/PassengerManager.gd" id="2_hwcn8"]
+[ext_resource type="Script" uid="uid://bisjrqw8c3o60" path="res://vehicle/VehicleSpawnManager.gd" id="3_3c05p"]
+[ext_resource type="PackedScene" uid="uid://cwcowjlfvc42a" path="res://vehicle/AI/mmt_ai_sedan.tscn" id="4_wo5b8"]
+[ext_resource type="Script" uid="uid://dvhny3k8wsu0v" path="res://vehicle/AI/Parameter/AIParameter.gd" id="5_hdcwu"]
+[ext_resource type="Script" uid="uid://bq0cp66txq3og" path="res://vehicle/AI/Parameter/AIParameterEntry.gd" id="6_ufqpd"]
+[ext_resource type="Script" uid="uid://j6xtknxam8r4" path="res://vehicle/VehicleSpawner.gd" id="7_wo5b8"]
+[ext_resource type="Script" uid="uid://eytex4xxespw" path="res://Passenger/PassengerSpawner.gd" id="8_hdcwu"]
+[ext_resource type="Script" uid="uid://d3s8tsoieot5h" path="res://Passenger/PassengerDestination.gd" id="9_ufqpd"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_6jk8d"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_ek7y0"]
+size = Vector3(200, 0.2, 200)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_6jk8d"]
+size = Vector3(1, 50, 200)
+
+[sub_resource type="Resource" id="Resource_8uxbe"]
+script = ExtResource("6_ufqpd")
+company_id = 0
+rw_speed = 0.25
+success_dist = 11.0
+pickup_radius = 5.0
+dropoff_radius = 10.0
+stop_speed_threshold = 5.0
+enabled_moving_penalty = true
+enabled_dense_nav = true
+
+[node name="FlatTrainArena" type="Node3D" unique_id=561966501]
+script = ExtResource("1_k4aah")
+
+[node name="Ground" type="StaticBody3D" parent="." unique_id=174248256]
+collision_mask = 28
+
+[node name="Ground" type="MeshInstance3D" parent="Ground" unique_id=1882501348]
+transform = Transform3D(100, 0, 0, 0, 0.2, 0, 0, 0, 100, 0, 0, 0)
+mesh = SubResource("BoxMesh_6jk8d")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Ground" unique_id=1572117191]
+shape = SubResource("BoxShape3D_ek7y0")
+
+[node name="Wall0" type="StaticBody3D" parent="." unique_id=814684598]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -50.5, 0, 0)
+collision_layer = 2
+collision_mask = 28
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Wall0" unique_id=494366067]
+shape = SubResource("BoxShape3D_6jk8d")
+
+[node name="Wall2" type="StaticBody3D" parent="." unique_id=336422864]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 0, 0, -100.5)
+collision_layer = 2
+collision_mask = 28
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Wall2" unique_id=1369865386]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -50.5, 0, 0)
+shape = SubResource("BoxShape3D_6jk8d")
+
+[node name="Wall3" type="StaticBody3D" parent="." unique_id=435732581]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 0, 0, 50.5)
+collision_layer = 2
+collision_mask = 28
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Wall3" unique_id=1717957694]
+shape = SubResource("BoxShape3D_6jk8d")
+
+[node name="Wall1" type="StaticBody3D" parent="." unique_id=643356048]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 50.5, 0, 0)
+collision_layer = 2
+collision_mask = 28
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Wall1" unique_id=980797166]
+shape = SubResource("BoxShape3D_6jk8d")
+
+[node name="PassengerManager" type="Node3D" parent="." unique_id=2042366321 node_paths=PackedStringArray("spawner_root", "destination_root")]
+script = ExtResource("2_hwcn8")
+spawner_root = NodePath("../SpawnerMark/Passenger")
+destination_root = NodePath("../Desitination")
+max_number = 8
+metadata/_custom_type_script = "uid://bve6okfsudmei"
+
+[node name="VehicleSpawnManager" type="Node3D" parent="." unique_id=922134573 node_paths=PackedStringArray("spawner_root", "ai_parameter")]
+script = ExtResource("3_3c05p")
+car_scene = ExtResource("4_wo5b8")
+faction_list = Dictionary[int, String]({
+0: "公司0"
+})
+vehicles_per_faction = 1
+spawner_root = NodePath("../SpawnerMark/Vehicle")
+ai_parameter = NodePath("../AIParameter")
+metadata/_custom_type_script = "uid://bisjrqw8c3o60"
+
+[node name="AIParameter" type="Node" parent="." unique_id=996100459 groups=["AIParameter"]]
+script = ExtResource("5_hdcwu")
+parameters = Array[ExtResource("6_ufqpd")]([SubResource("Resource_8uxbe")])
+metadata/_custom_type_script = "uid://dvhny3k8wsu0v"
+
+[node name="SpawnerMark" type="Node3D" parent="." unique_id=819477325]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5611572, 7.8052063)
+
+[node name="Passenger" type="Node3D" parent="SpawnerMark" unique_id=1202918513]
+
+[node name="PassengerSpawner" type="Marker3D" parent="SpawnerMark/Passenger" unique_id=742174630]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -9.5690775)
+script = ExtResource("8_hdcwu")
+metadata/_custom_type_script = "uid://eytex4xxespw"
+
+[node name="Vehicle" type="Node3D" parent="SpawnerMark" unique_id=885897330]
+
+[node name="VehicleSpawner" type="Marker3D" parent="SpawnerMark/Vehicle" unique_id=1045939056]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.061157227, 10.412794)
+script = ExtResource("7_wo5b8")
+metadata/_custom_type_script = "uid://j6xtknxam8r4"
+
+[node name="Desitination" type="Node3D" parent="." unique_id=251830482]
+
+[node name="PassengerDestination" type="Marker3D" parent="Desitination" unique_id=2091914399]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -19.218412, 0, 7.879339)
+script = ExtResource("9_ufqpd")
+metadata/_custom_type_script = "uid://d3s8tsoieot5h"

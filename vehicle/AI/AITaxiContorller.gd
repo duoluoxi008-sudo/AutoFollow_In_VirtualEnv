@@ -2,7 +2,7 @@ extends AIController3D
 class_name AITaxiController
 
 # ============================================================================
-# AITaxiController —— 跟车（AutoFollow）任务的 AI 控制器
+# AITaxiController —— 跟车（AutoFollow）任务的 AI 控制器（**只管 RL**）
 #
 # 参考 godot_rl_agents 的 3DCarParking 示例实现：
 #   - get_obs()      组装观测向量（自身车辆状态 + 目标相对状态 + 射线传感器）
@@ -11,39 +11,98 @@ class_name AITaxiController
 #   - set_action()   把 Python 传来的连续动作写入 MMTVehicleInputState
 #   - _physics_process 负责计时、结束判定与重置
 #
+# ----------------------------------------------------------------------------
+# 分层（重要）
+# ----------------------------------------------------------------------------
+# 跟"开车/RL"无关的出租车业务逻辑已经全部搬到组件里，本类**只收集**：
+#
+#   TaxiServiceComponent（挂在车上，AI/玩家通用）
+#       载客状态、目标乘客、接客/送达状态机、派单认领、归还乘客
+#         ↓ 信号（carrying_changed / passenger_picked_up / passenger_dropped_off / target_stolen）
+#   AITaxiController（本类）
+#       把业务事件翻译成 reward 与 info 字段，并负责 RL 的回合生命周期
+#
+#   VehicleStateResetter（挂在车上，AI/玩家通用）
+#       车辆与输入状态的复位、出生点重生 → 回合重置时调用
+#
+# 因此本类里**不再有**任何"接客/送达/重置车辆"的实现，只有转发与收集。
+# 兼容性：has_passenger / carried_passenger / current_target / company_id /
+# pickup_radius / dropoff_radius / stop_speed_threshold 仍以同名属性暴露，
+# 但读写都会转发到 TaxiServiceComponent 上（既有读取方无需改动）。
+#
+# 另外：只有被 godot_rl 的 Sync 认领过的控制器才跑回合逻辑（见 is_rl_active()）。
+# 玩家车 / 演示车里挂本控制器只是为了复用业务组件，不会被"超时重置"传送走。
+#
 # 车辆侧（MMTVehicleBody / mmt_sedan.gd）：
 #   - 通过 set_controller_input() 接收共享输入对象，每个物理帧从中读取。
 #   - 通过 get_vehicle_state() 暴露自身运行状态。
 # ============================================================================
 
 # --- 目标与任务配置 ---
-## 当进入乘客多少范围时则刹车距离，期望令Agent能够正好在乘客附近刹停
-@export var target_follow_distance: float = 1.5
-## 用于归一化的最大车速（米/秒）
+## 用于归一化的最大车速（米/秒）。这是**控制器真正会读**的量（get_obs 里归一化车速）。
+##
+## 注意：target_follow_distance / track_range / success_dist / max_track_dist /
+## rw_* 这一组**不在这里声明** —— 它们属于 PickUpAndDropRewardFunction，
+## 由 AIParameter 在生成车辆时按阵营写入那个节点。
+## 曾经两边各声明一份，结果 apply_to 会写两处、而控制器那份没有任何函数读，
+## 属于"同一个量三个定义"，只会在调参时误导人（见下面的说明）。
 @export_range(1.0, 60.0) var max_speed_mps: float = 25.0
-## 用于归一化的最大横向/纵向目标偏移（米）
-@export_range(1.0, 40.0) var track_range: float = 10.0
-# --- 车队/公司机制 ---
-## 公司编号：同编号为同一车队（队友），彼此不被视为对手、不互相竞争
-@export var company_id: int = 0
+
+# --- 业务组件（与 RL 无关的逻辑都在这里，可以挂到 AI 或玩家车上）---
+@export_group("业务组件")
+## 接送业务组件：载客状态/目标选择/接客送达。留空则自动在本车子树里查找。
+@export var taxi_service: TaxiServiceComponent
+## 车辆复位组件：清空车辆内部状态 + 出生点重生。留空则自动在本车子树里查找。
+@export var vehicle_resetter: VehicleStateResetter
+
+# --- 调试 / 课程学习 ---
+@export_group("调试（课程学习用）")
+## 实验开关：强制转向为 0，只保留油门。
+##
+## 用途：区分两种完全不同的失败。
+##   - 打开后策略**能**学会直着加速 → 学习闭环本身没问题，
+##     瓶颈在"转向动作空间太大"（3 维连续，随机探索很难碰到"直着开"）
+##   - 打开后**仍然**学不会 → 学习闭环/奖励/观测还有更基础的问题
+##
+## 这不是最终配置，是 Phase 1 的诊断手段。定位完请关掉。
+@export var debug_disable_steering: bool = false
+
+## 倒车挡位保持：一次 `reverse > 0` 的采样让"倒车意图"保持多少个 **env step**。
+##
+## ⚠️ 这是"学不会倒车"的机制性原因，不是调参问题：
+## `set_action()` 每个 env step（= action_repeat 个物理帧）才被调用一次，而在原实现里
+## `reverse_raw > 0` **只对当帧生效**。要把头顶在墙上的车倒出来，需要**连续**约 20 个
+## env step 的倒车（≥0.5 s 的持续反向）；而单步采样到倒车的概率只有 ~8%
+## （均值 -0.5、std ≈0.3，见 `--action_bias`）⟹ 连续 20 步的概率 0.08^20 ≈ 0。
+## **随机探索永远产生不了这个序列**，于是策略永远拿不到"倒车 ⇒ 离开墙 ⇒ 停止扣分"
+## 这条梯度 —— 表现就是"它完全没有用倒车的意愿"。
+##
+## 加了保持之后：**一次采样就能产生一段倒车**，探索从"不可能"变成"随时可能"。
+## 物理上也更真实：真车的挡位不可能每 0.13 s 换一次。
+## 0 = 关闭，退回旧行为（仅当帧生效），便于 A/B。
+@export_range(0, 20) var reverse_hold_steps: int = 4
+
 # --- 传感器 ---
 @export_group("传感器")
 @export var sensor_manager:SensorManager
+
 # --- 奖励权重 ---
+# 说明：rw_dist / rw_speed / rw_lateral / rw_progress / rw_step 属于
+# PickUpAndDropRewardFunction，不在这里声明（见文件上方 max_speed_mps 的注释）。
+# 这里只保留**控制器自己真正消费**的几个量。
 @export_group("奖励权重")
 @export var reward_manager:RewardManager
-@export var rw_dist: float = 2.0        ## 距离误差惩罚
-@export var rw_speed: float = 0.6       ## 相对速度惩罚
-@export var rw_lateral: float = 0.8     ## 横向偏差惩罚
-@export var rw_progress: float = 3.0    ## 靠近目标的进度奖励
-@export var rw_step: float = -0.01      ## 每步微小代价（鼓励尽快完成任务）
-@export var reward_fail: float = -6.0   ## 失败（丢失目标/翻车/超时）奖励
+@export var reward_fail: float = -6.0   ## 失败（超时）奖励
+@export var reward_success: float = 5.0 ## 成功终止（送达完成）时的终局奖励
+## 被敌人（不同公司）抢走目标乘客的惩罚（一次性扣在 reward 上）。
+## 暂设 0：策略连"接客"都还没学会时，竞争惩罚只会往梯度里加噪声。
+## 等单机任务学会后（task/pickups 稳定为正）再调回 1.5~2.0 引入竞争。
+@export var stolen_penalty: float = 0.0
 
 # --- 终止条件 ---
+# max_track_dist / success_dist 属于 PickUpAndDropRewardFunction，不在这里声明。
 @export_group("终止条件")
-@export var max_track_dist: float = 12.0         ## 超出该距离视为丢失目标
-@export var success_dist: float = 0.8            ## 判定"成功"的距离
-@export var enable_success_terminal: bool = false ## 是否启用成功终止（跟车任务通常不启用）
+@export var enable_success_terminal: bool = true ## 是否启用成功终止（送达即结束回合）
 @export var success_hold_frames: int = 8         ## 需要持续满足成功条件的帧数
 
 # --- 内部引用 ---
@@ -51,16 +110,104 @@ var _vehicle: MMTVehicleBody
 var _input: MMTVehicleInputState
 var _initial_transform: Transform3D
 var _smallest_dist: float = INF
+## 兼容兜底：组件还没解析出来时先把 company_id 存在这里，解析后补写进组件。
+var _company_id_pending: int = 0
 
 # 上一帧动作（用于专家演示录制）
 var _last_action: Array[float] = [0.0, 0.0, 0.0]
+## 剩余多少 env step 保持倒车意图（见 reverse_hold_steps）
+var _reverse_hold: int = 0
 # 成功状态（供 get_info 使用）
 var _is_success: bool = false
 var _success_frames: int = 0
-# 竞争多智能体：本车是否正在载客（接送逻辑在接客时置 true、送达时置 false）
-var has_passenger: bool = false
-# 当前所载的乘客（接送逻辑接客时赋值，送达置 null；供 PassengerPositionSensor3D 读目的地）
-var carried_passenger: Passenger = null
+# 本控制器累计的回合结束次数（只用于诊断打印，确认回合真的在结束）
+var _episode_count: int = 0
+# done 已经保持了多少帧（配合 _DONE_HOLD_MAX 兜底，见 _physics_process）
+var _done_hold: int = 0
+
+## done 最多保持多少帧等 Sync 读走。正常只需要 action_repeat 帧（默认 8），
+## 给足余量以防 action_repeat 被调大，同时避免异常情况下车辆永久卡死。
+const _DONE_HOLD_MAX: int = 300
+
+## 观测第 1 维"回合进度"的固定归一化时域（物理帧）。
+##
+## 为什么是固定常数、而不是 reset_after：
+##   reset_after 属于"环境配置"——换地图或改时间预算就要动它。如果这一维跟着它变，
+##   策略学到的刻度（例如"0.8 = 该冲了"）就失效了，而且**不会报错，只会静默退化**。
+##   改成固定常数后，这一维的含义 = "已经跑了多久（截断到 3 分钟）"，与环境无关，
+##   换预算/换地图都不需要因此重训。
+## 10800 帧 = 180 秒，与当前的 reset_after 数值相同，但两者是**独立**的概念。
+const OBS_TIME_HORIZON_FRAMES: float = 10800.0
+
+## 车牌/载客外观变化（由业务组件的 carrying_changed 转发而来）。
+## 保留这个信号是为了兼容已有的场景连线（PlateSwitch）。
+signal change_taxi_plate_color(has_passenger:bool)
+
+# --- 供 Python 训练侧读取的业务事件标志 ---
+# 这些标志让 Python 侧能按"业务指标"（真的接到客/送到客）判断策略质量，
+# 而不是只看被塑形项污染的 episode_reward。见 rl/docs/CURRICULUM.md。
+#
+# 语义：**读取即清零** —— 表示"上一次 get_info() 之后本车是否发生过该事件"。
+# 这样即使 action_repeat > 1（get_info 不是每帧都读）或业务组件的物理帧
+# 排在本控制器之后，事件也不会丢。
+var _ev_picked_up: bool = false
+var _ev_delivered: bool = false
+var _ev_stolen: bool = false
+
+# ----------------------------------------------------------------------------
+# 业务状态/参数的兼容转发（真正的状态在 TaxiServiceComponent 上）
+# 保留同名属性，是为了让既有读取方（RivalPositionSensor / 奖励函数 /
+# AIParameter 一键同步 / VehicleSpawner）一行都不用改。
+# ----------------------------------------------------------------------------
+
+## 是否载客（只读，转发业务组件）
+var has_passenger: bool:
+	get:
+		return taxi_service.has_passenger if _has_taxi_service() else false
+
+## 当前所载乘客（只读，转发业务组件）
+var carried_passenger: Passenger:
+	get:
+		return taxi_service.carried_passenger if _has_taxi_service() else null
+
+## 空车时锁定的目标乘客（只读，转发业务组件）
+var current_target: Passenger:
+	get:
+		return taxi_service.current_target if _has_taxi_service() else null
+
+## 公司/车队编号（转发业务组件）。
+## 注意：车队的"真身"在组件上（玩家车没有控制器，也必须有公司编号）。
+var company_id: int:
+	get:
+		return taxi_service.company_id if _has_taxi_service() else _company_id_pending
+	set(value):
+		_company_id_pending = value
+		if _has_taxi_service():
+			taxi_service.company_id = value
+
+## 靠近多近可以接客（米）。转发业务组件（在检视器里请改组件的值）。
+var pickup_radius: float:
+	get:
+		return taxi_service.pickup_radius if _has_taxi_service() else 0.0
+	set(value):
+		if _has_taxi_service():
+			taxi_service.pickup_radius = value
+
+## 靠近多近可以送达（米）。转发业务组件。
+var dropoff_radius: float:
+	get:
+		return taxi_service.dropoff_radius if _has_taxi_service() else 0.0
+	set(value):
+		if _has_taxi_service():
+			taxi_service.dropoff_radius = value
+
+## 判定"停稳"的速度阈值（米/秒）。转发业务组件。
+var stop_speed_threshold: float:
+	get:
+		return taxi_service.stop_speed_threshold if _has_taxi_service() else 0.0
+	set(value):
+		if _has_taxi_service():
+			taxi_service.stop_speed_threshold = value
 
 
 func _ready() -> void:
@@ -75,18 +222,118 @@ func _ready() -> void:
 	_input = MMTVehicleInputState.new()
 	_vehicle.set_controller_input(_input)
 
-	_initial_transform = _vehicle.transform
+	# 解析（或自动查找）业务组件，并把本类注册为它们的"收集者"。
+	_resolve_business_components()
+
+	# 出生位姿：先立即记一份（保证任何时刻都有有效值），再 deferred 重记一次。
+	# 详见 VehicleStateResetter._ready() 的说明（VehicleSpawner 是先 add_child 再摆位姿的）。
+	capture_spawn_transform()
+	capture_spawn_transform.call_deferred()
 	_smallest_dist = INF
+
+
+## 记录车辆当前位姿为"出生位姿"（全局坐标）。
+## 真正的记录在 VehicleStateResetter 里；这里保留同名方法是为了兼容 VehicleSpawner 的调用。
+#expose
+func capture_spawn_transform() -> void:
+	if _vehicle == null or not is_instance_valid(_vehicle):
+		return
+	_initial_transform = _vehicle.global_transform
+	if vehicle_resetter == null:
+		vehicle_resetter = VehicleStateResetter.find_for(_vehicle)
+	if vehicle_resetter != null:
+		vehicle_resetter.capture_spawn_transform()
 
 
 func init(player: Node3D) -> void:
 	super.init(player)
 	_vehicle = player as MMTVehicleBody
+	_resolve_business_components()
+
+
+# ----------------------------------------------------------------------------
+# 业务组件接线（本类只"订阅"，不实现业务）
+# ----------------------------------------------------------------------------
+#expose
+func _resolve_business_components() -> void:
+	if _vehicle == null or not is_instance_valid(_vehicle):
+		return
+
+	if taxi_service == null or not is_instance_valid(taxi_service):
+		taxi_service = TaxiServiceComponent.find_for(_vehicle)
+	if vehicle_resetter == null or not is_instance_valid(vehicle_resetter):
+		vehicle_resetter = VehicleStateResetter.find_for(_vehicle)
+
+	if taxi_service == null:
+		push_warning(
+			"AITaxiController: 本车没有 TaxiServiceComponent，接送业务（接客/送达/派单）不可用。"
+			+ "请在车辆场景里加一个 TaxiServiceComponent 节点。"
+		)
+		return
+
+	if taxi_service.vehicle == null:
+		taxi_service.vehicle = _vehicle
+
+	# 公司编号同步：场景里显式写过控制器一侧就推给组件，否则以组件为准。
+	if _company_id_pending != 0:
+		taxi_service.company_id = _company_id_pending
+	else:
+		_company_id_pending = taxi_service.company_id
+
+	if not taxi_service.carrying_changed.is_connected(_on_service_carrying_changed):
+		taxi_service.carrying_changed.connect(_on_service_carrying_changed)
+	if not taxi_service.passenger_picked_up.is_connected(_on_service_picked_up):
+		taxi_service.passenger_picked_up.connect(_on_service_picked_up)
+	if not taxi_service.passenger_dropped_off.is_connected(_on_service_dropped_off):
+		taxi_service.passenger_dropped_off.connect(_on_service_dropped_off)
+	if not taxi_service.target_stolen.is_connected(_on_service_target_stolen):
+		taxi_service.target_stolen.connect(_on_service_target_stolen)
+
+
+func _has_taxi_service() -> bool:
+	return taxi_service != null and is_instance_valid(taxi_service)
+
+
+## 本控制器是否真的在跑 RL 回合（训练 / 推理 / 人类接管 / 专家录制）。
+##
+## 判据：control_mode 是否还停在 INHERIT_FROM_SYNC = "没有任何 Sync 认领过它"。
+## godot_rl 的 Sync 在初始化时会把每个 AGENT 的 control_mode 覆写成
+## TRAINING / ONNX_INFERENCE / HUMAN（见 addons/godot_rl_agents/sync.gd 的
+## _set_agent_mode：只覆写 INHERIT_FROM_SYNC 的那种）。
+##
+## 为什么要判断：玩家车场景（levels/mmt_player_sedan.tscn 实例化的轿车）里也带着
+## 一个 AITaxiController——那是为了复用接送业务组件。它没有 Sync，
+## 如果照样跑回合逻辑，就会在 reset_after 步之后把**玩家的车**传送到出生点。
+func is_rl_active() -> bool:
+	return control_mode != ControlModes.INHERIT_FROM_SYNC
+
+
+# --- 业务事件 → RL（奖励/info）--------------------------------------------
+
+func _on_service_carrying_changed(now_carrying: bool) -> void:
+	# 兼容旧场景连线：车牌外观跟着载客状态翻转
+	change_taxi_plate_color.emit(now_carrying)
+
+
+func _on_service_picked_up(_p: Passenger) -> void:
+	_ev_picked_up = true
+
+
+func _on_service_dropped_off(_p: Passenger) -> void:
+	_ev_delivered = true
+	# 送达即达成成功条件（供 enable_success_terminal 判定终止）
+	_success_frames = success_hold_frames
+
+
+func _on_service_target_stolen(_p: Passenger, _by_company: int) -> void:
+	reward -= stolen_penalty
+	_ev_stolen = true
 
 
 # ----------------------------------------------------------------------------
 # 观测
 # ----------------------------------------------------------------------------
+#expose
 func get_obs() -> Dictionary:
 	var observations: Array[float] = []
 
@@ -113,7 +360,8 @@ func get_obs() -> Dictionary:
 		rpm_norm = _vehicle.engine.current_rpm / _vehicle.engine.max_rpm
 
 	observations.append_array([
-		n_steps / float(reset_after),
+		# 回合进度：用**固定常数**归一化，不除 reset_after（见 OBS_TIME_HORIZON_FRAMES）
+		clampf(n_steps / OBS_TIME_HORIZON_FRAMES, 0.0, 1.0),
 		clampf(forward_speed / max_speed_mps, -1.0, 1.0),   # 前向车速
 		clampf(lateral_speed / max_speed_mps, -1.0, 1.0),   # 横向车速
 		clampf(yaw_rate * 0.5, -1.0, 1.0),                  # 横摆角速度
@@ -124,8 +372,9 @@ func get_obs() -> Dictionary:
 	])
 	# --- 2. 传感器（含乘客目标/对手等，由 SensorManager 拼接） ---
 	#传感器值
-	observations.append_array(sensor_manager.get_raycast_observations())
-	observations.append_array(sensor_manager.get_position_observations())
+	if sensor_manager != null:
+		observations.append_array(sensor_manager.get_raycast_observations())
+		observations.append_array(sensor_manager.get_position_observations())
 	return {"obs": observations}
 
 
@@ -139,39 +388,76 @@ func get_obs_space():
 # ----------------------------------------------------------------------------
 # 动作
 # ----------------------------------------------------------------------------
+## 动作空间：油门 + 转向 + 倒车意图。
+##
+## ## 为什么没有独立的 brake 维度
+##
+## 车辆自带两套刹车逻辑，显式 brake 维度是冗余的，而且会和它们打架：
+##   - `mmt_sedan.auto_hold`：|前向速度| < 0.5 且没给油门时自动刹停
+##   - `mmt_sedan.auto_reverse`：向前油门在"车正在倒车"时被当作刹车
+##
+## 实测（81 万步、600 agent 零进展）发现：策略用均匀随机的 brake 值
+## （std≈1.0）把车按住 —— 刹车扭矩上限 1200 Nm 是发动机净输出（≈143 Nm）的 8 倍，
+## 只要 brake 有个 0.2 就足以完全抵消全油门。而且经验回放里
+## "同时踩油门和刹车"这个矛盾组合要被策略自己发现并排除，在 3 维均匀探索下几乎不可能。
+##
+## ## 为什么要把"倒车"显式暴露出来
+##
+## `auto_reverse` 的语义是"控制器只表达向前愿望，车辆自己判断要不要先刹车"。
+## 这在**车正在倒车**时会死锁：
+##     forward_speed < -0.2  →  向前油门被解释成刹车  →  车继续停/继续倒
+## 策略没有任何输入可以表达"先停下来、再前进"，于是永远出不来（实测 spd=-1.09 卡在倒挡）。
+##
+## 显式给出 reverse 意图后：throttle 只表示"油门大小"（非负），
+## reverse 表示"想往哪开"，两者正交，不再依赖速度符号去猜意图。
 func get_action_space() -> Dictionary:
 	return {
 		"throttle": {"size": 1, "action_type": "continuous"},
 		"steering": {"size": 1, "action_type": "continuous"},
-		"brake":    {"size": 1, "action_type": "continuous"},
+		"reverse":  {"size": 1, "action_type": "continuous"},
 	}
 
 
+#expose
 func set_action(action) -> void:
 	if _input == null:
 		return
 
-	# 连续动作，值为 [-1, 1]（throttle/steering）与 [0, 1]（brake）。
-	#油门
-	var throttle: float = clampf(_get_action_val(action, "throttle"), -1.0, 1.0)
-	#左右旋转轮胎
+	# 连续动作，值为 [-1, 1]。throttle 取绝对值当"油门大小"，
+	# reverse 以 0 为界决定方向（SB3 的连续空间是 [-1,1]，用符号表达布尔量）。
+	var throttle_raw: float = clampf(_get_action_val(action, "throttle"), -1.0, 1.0)
 	var steer: float = clampf(_get_action_val(action, "steering"), -1.0, 1.0)
-	#刹车
-	var brake: float = clampf(_get_action_val(action, "brake"), 0.0, 1.0)
+	var reverse_raw: float = clampf(_get_action_val(action, "reverse"), -1.0, 1.0)
 
-	# 把 [-1, 1] 的油门意图分解为前向/后向油门，
-	# 车辆的 auto_reverse 逻辑会自动把"反向油门"当作刹车处理。
-	if throttle >= 0.0:
+	var throttle: float = absf(throttle_raw)
+
+	# 倒车挡位保持（hysteresis）：一次采样 → 一段持续倒车。详见 reverse_hold_steps 的说明。
+	if reverse_raw > 0.0:
+		_reverse_hold = reverse_hold_steps
+	elif _reverse_hold > 0:
+		_reverse_hold -= 1
+	var wants_reverse: bool = _reverse_hold > 0
+
+	# 调试/课程学习：强制转向为零，只保留油门。
+	# 用来判断"学习闭环是否工作"，见 debug_disable_steering 的说明。
+	if debug_disable_steering:
+		steer = 0.0
+
+	# 把"油门大小 + 方向意图"映射到车辆的两路油门。
+	# 不再写 _input.brake —— 刹车完全交给车上的 auto_hold / auto_reverse。
+	if wants_reverse:
+		_input.throttle_forward = 0.0
+		_input.throttle_back = throttle
+	else:
 		_input.throttle_forward = throttle
 		_input.throttle_back = 0.0
-	else:
-		_input.throttle_forward = 0.0
-		_input.throttle_back = -throttle
 
 	_input.steer_axis = steer
-	_input.brake = brake
+	# 显式清零：万一这个 input 对象之前被别的控制器（如玩家）用过，
+	# 残留的 brake 值会把车按住。
+	_input.brake = 0.0
 
-	_last_action = [throttle, steer, brake]
+	_last_action = [throttle_raw, steer, reverse_raw]
 
 
 func get_action() -> Array:
@@ -186,23 +472,75 @@ func get_reward() -> float:
 
 
 func get_info() -> Dictionary:
-	return {"is_success": _is_success}
+	# 把业务事件一起交给 Python：训练侧用它判断"策略是否真的在接客"，
+	# 而不是只看被塑形项主导的 episode_reward。
+	# 读取即清零（见 _ev_* 的说明）。
+	var info := {
+		"is_success": _is_success,
+		"is_carrying": has_passenger,
+		"picked_up": _ev_picked_up,
+		"delivered": _ev_delivered,
+		"stolen": _ev_stolen,
+	}
+	_ev_picked_up = false
+	_ev_delivered = false
+	_ev_stolen = false
+	return info
 
 
+# ----------------------------------------------------------------------------
+# 物理帧主循环（只保留 RL 生命周期；接送状态机由 TaxiServiceComponent 自己跑）
+# ----------------------------------------------------------------------------
 func _physics_process(delta):
 	if _vehicle == null:
+		return
+
+	# 不是 RL 回合中的 agent 就完全不碰回合逻辑（见 is_rl_active 的说明）：
+	# 玩家车 / 演示车里同样可以挂 AITaxiController 来复用业务组件，
+	# 但它绝不该被"超时重置"传送走。
+	if not is_rl_active():
 		return
 
 	n_steps += 1
 
 	# 需要重置时（由超时/终止或 Python reset 触发）
 	if needs_reset:
+		# 训练模式下 done 必须**保持到 Sync 把它读走**为止 —— Sync 读完会调用
+		# set_done_false() 通知本控制器（见 sync.gd:_get_done_from_agents）。
+		#
+		# 为什么不能立刻重置：done 只存活 1 帧，而 Sync 每 action_repeat 帧
+		# （sync.gd:13 默认 8）才采样一次 done；再叠加节点顺序（TaxiSync 是外层
+		# 场景的第 2 个子节点，排在各个 arena 前面，同一帧里先读 done），
+		# 终止信号会被 100% 漏掉。实测：405,504 步 / 18 个 agent，
+		# TensorBoard 里 rollout/* 与 task/success_rate 全部缺失、task/dropoffs
+		# 恒为 0 —— 就是"零回合被观测到"。
+		#
+		# 推理 / 人类 / 演示模式下没有谁消费 done，必须立刻重置，否则车会卡死。
+		#
+		# _DONE_HOLD_MAX 是兜底：即使处于 TRAINING、但没有谁在读 done
+		# （例如 Python 没连上，sync.gd:_training_process 的 `if connected` 不成立），
+		# 也不能让车永久卡在 done 状态。
+		if control_mode == ControlModes.TRAINING and done and _done_hold < _DONE_HOLD_MAX:
+			_done_hold += 1
+			return
+		_done_hold = 0
 		_reset_episode()
 		return
 
 	# 时间上限
 	if n_steps > reset_after:
 		_end_episode(reward_fail)
+		return
+
+	# 累加各 RewardFunction3D 子节点（塑形/事件/低速惩罚）到本步 reward
+	if reward_manager != null:
+		reward += reward_manager.get_reward()
+
+	# 成功终止：送达后结束回合。这是 PPO 能学到"送达"的关键——
+	# 否则回合要拖满 reset_after 步，γ 折扣会把送达奖励稀释到接近 0。
+	if enable_success_terminal and _success_frames >= success_hold_frames:
+		_is_success = true
+		_end_episode(reward_success)
 		return
 
 
@@ -214,19 +552,63 @@ func _end_episode(final_reward: float) -> void:
 	needs_reset = true
 	done = true
 
+	# 诊断：确认回合确实在结束。和 TensorBoard 的 rollout/ep_rew_mean 配对看 ——
+	# 这里打印说明"回合结束了"，曲线出现说明"Sync 读到了 done"。
+	# 只打前几条 + 每 100 条，避免 18 个 agent 刷屏。
+	_episode_count += 1
+	if _episode_count <= 3 or _episode_count % 100 == 0:
+		print(
+			"[AITaxi] %s 回合结束 #%d：步数=%d 累计奖励=%.2f 成功=%s"
+			% [name, _episode_count, n_steps, reward, str(_is_success)]
+		)
+
+
 # 重置车辆与控制器状态。
+# 业务（乘客/目标/派单）交给 TaxiServiceComponent，车辆交给 VehicleStateResetter，
+# 本类只负责 RL 自己的回合状态。
+#expose
 func _reset_episode() -> void:
+	# 1) 业务：先归还手里还没送达的乘客（否则它会一直挂在车上、跟着车被传送，
+	#    既不会送达也不会被回收），再释放旧目标的派单认领、清空接送状态。
+	if _has_taxi_service():
+		taxi_service.reset_service()
+
+	# 2) 车辆：复位输入/动力总成/转向/轮胎，并向生成点占用表领一个随机出生点就地传送。
+	_respawn_vehicle()
+
+	# 3) RL：回合状态与奖励函数
 	reset()                 # 基类：n_steps = 0；needs_reset = false
 	done = false
 	_is_success = false
 	_success_frames = 0
 	_smallest_dist = INF
+	_ev_picked_up = false
+	_ev_delivered = false
+	_ev_stolen = false
+	# 倒车挡位保持也要清零，否则上一回合最后一次动作的"余温"会跨回合泄漏
+	_reverse_hold = 0
 
-	# 车辆归位到初始位姿并清零速度。
-	if _vehicle != null:
-		_vehicle.transform = _initial_transform
-		_vehicle.linear_velocity = Vector3.ZERO
-		_vehicle.angular_velocity = Vector3.ZERO
+	# 重置各 RewardFunction3D 子节点的内部状态
+	if reward_manager != null:
+		reward_manager.reset()
+
+
+## 就地在随机出生点重生（组件缺失时退化为"送回出生位姿"）。
+#expose
+func _respawn_vehicle() -> void:
+	if vehicle_resetter == null or not is_instance_valid(vehicle_resetter):
+		vehicle_resetter = VehicleStateResetter.find_for(_vehicle)
+
+	if vehicle_resetter != null:
+		vehicle_resetter.respawn_at_random_spawn_point()
+		return
+
+	# 兜底：没有复位组件时至少别把车丢在原点、也别留着上一回合的速度与输入
+	if _vehicle == null or not is_instance_valid(_vehicle):
+		return
+	_vehicle.global_transform = _initial_transform
+	_vehicle.linear_velocity = Vector3.ZERO
+	_vehicle.angular_velocity = Vector3.ZERO
 	if _input != null:
 		_input.reset()
 
@@ -234,6 +616,7 @@ func _reset_episode() -> void:
 func reset_if_done():
 	if done:
 		reset()
+
 
 # ----------------------------------------------------------------------------
 # 辅助
@@ -256,9 +639,6 @@ func is_carrying() -> bool:
 	return has_passenger
 
 
-
-
-
 func _get_action_val(action: Variant, key: String) -> float:
 	# action 是包含 "key": [value] 的字典。
 	if not (action is Dictionary):
@@ -268,6 +648,11 @@ func _get_action_val(action: Variant, key: String) -> float:
 	if arr == null:
 		return 0.0
 	if arr is Array:
+		# 推理路径（sync.gd::_extract_action_dict）在模型输出长度不足时会给出**空数组**，
+		# 此时 arr[0] 会报 "Invalid access of index '0' on a base object of type: 'Array'"。
+		# 这类情况下退化为 0.0（= 不加油门/不转向），让这一步静默跳过而不是每帧刷红字。
+		if arr.is_empty():
+			return 0.0
 		return float(arr[0])
 	if arr is Dictionary:
 		return float(arr.get("value", 0.0))

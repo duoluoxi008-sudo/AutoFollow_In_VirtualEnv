@@ -1,0 +1,28 @@
+[gd_scene format=3 uid="uid://dx0lcuypv2koa"]
+
+[ext_resource type="PackedScene" uid="uid://clxg7q048fge7" path="res://levels/TestTrainArena.tscn" id="3_lk68x"]
+[ext_resource type="Script" uid="uid://clh3p4osx4i55" path="res://misc/free_fly_camera.gd" id="3_tj1vh"]
+[ext_resource type="Script" uid="uid://dgty4hy4npql1" path="res://vehicle/AI/sync_taxi.gd" id="4_c4utk"]
+[ext_resource type="Environment" uid="uid://fu26fprl3d5v" path="res://environments/default_environment.tres" id="4_s1wru"]
+
+[node name="MMTPlayerSedan" type="Node3D" unique_id=1855559228]
+
+[node name="FreeFlyCamera" type="Camera3D" parent="." unique_id=396686898]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.3713303, 1.2681046, 7.267682)
+current = true
+script = ExtResource("3_tj1vh")
+metadata/_custom_type_script = "uid://clh3p4osx4i55"
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1481920673]
+environment = ExtResource("4_s1wru")
+
+[node name="Sun" type="DirectionalLight3D" parent="." unique_id=1742650551]
+transform = Transform3D(1, 0, 0, 0, 0.7488745, 0.6627119, 0, -0.6627119, 0.7488745, 0, 21.264856, 12.734179)
+light_energy = 5.0
+shadow_enabled = true
+sky_mode = 1
+
+[node name="TestTrainingArena" parent="." unique_id=2040108729 instance=ExtResource("3_lk68x")]
+
+[node name="TaxiSync" type="Node" parent="." unique_id=1739919999]
+script = ExtResource("4_c4utk")

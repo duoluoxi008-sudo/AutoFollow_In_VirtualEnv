@@ -1,0 +1,51 @@
+[gd_scene format=3 uid="uid://c78g6kxbhwx3r"]
+
+[ext_resource type="Environment" uid="uid://fu26fprl3d5v" path="res://environments/default_environment.tres" id="1_env"]
+[ext_resource type="PackedScene" uid="uid://dapvv8brm3oxw" path="res://misc/camera_rig.tscn" id="2_cam"]
+[ext_resource type="PackedScene" uid="uid://1pn6ha8ckrx5" path="res://vehicle/mmt_sedan.tscn" id="3_sedan"]
+[ext_resource type="Script" uid="uid://csrvics7w1y82" path="res://vehicle/mmt_player_controller.gd" id="4_ctrl"]
+[ext_resource type="PackedScene" uid="uid://c3ksw1hmlwrb3" path="res://Passenger/Passenger.tscn" id="5_b4dw2"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_grnd"]
+albedo_color = Color(0.22, 0.24, 0.28, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_grnd"]
+material = SubResource("StandardMaterial3D_grnd")
+size = Vector3(200, 1, 200)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_grnd"]
+size = Vector3(200, 1, 200)
+
+[node name="MMTPlayerSedan" type="Node3D" unique_id=1855559228]
+
+[node name="Sun" type="DirectionalLight3D" parent="." unique_id=1742650551]
+transform = Transform3D(1, 0, 0, 0, -0.5164892, 0.85629374, 0, -0.85629374, -0.5164892, 0, 21.264856, 0)
+light_energy = 5.0
+shadow_enabled = true
+sky_mode = 1
+
+[node name="Ground" type="StaticBody3D" parent="." unique_id=999575249]
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Ground" unique_id=1907513688]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
+mesh = SubResource("BoxMesh_grnd")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Ground" unique_id=983969457]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
+shape = SubResource("BoxShape3D_grnd")
+
+[node name="CameraRig" parent="." unique_id=1893088926 node_paths=PackedStringArray("cam_target") instance=ExtResource("2_cam")]
+cam_target = NodePath("../MMTSedan")
+
+[node name="MMTSedan" parent="." unique_id=1807119781 instance=ExtResource("3_sedan")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.5, 0)
+
+[node name="MMTPlayerController" type="Node" parent="." unique_id=601603190 node_paths=PackedStringArray("target_vehicle")]
+script = ExtResource("4_ctrl")
+target_vehicle = NodePath("../MMTSedan")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1481920673]
+environment = ExtResource("1_env")
+
+[node name="Passenger" parent="." unique_id=933529553 instance=ExtResource("5_b4dw2")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.7362766, 0.9999981, -9.129711)

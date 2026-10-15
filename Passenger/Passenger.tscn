@@ -6,13 +6,32 @@
 
 [sub_resource type="CapsuleMesh" id="CapsuleMesh_ek7y0"]
 
-[node name="Passenger" type="CharacterBody3D" unique_id=933529553]
+[sub_resource type="SphereShape3D" id="SphereShape3D_ek7y0"]
+radius = 8.0
+
+[node name="Passenger" type="CharacterBody3D" unique_id=933529553 node_paths=PackedStringArray("ground_check_ray")]
 collision_layer = 4
 collision_mask = 31
 script = ExtResource("1_q4ghm")
+ground_check_ray = NodePath("GroundCheck")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=796709673]
 shape = SubResource("CapsuleShape3D_ek7y0")
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=1300281731]
 mesh = SubResource("CapsuleMesh_ek7y0")
+
+[node name="WaitingArea" type="Area3D" parent="." unique_id=769293503]
+collision_layer = 4
+collision_mask = 16
+
+[node name="WatingAreaShape" type="CollisionShape3D" parent="WaitingArea" unique_id=36006907]
+shape = SubResource("SphereShape3D_ek7y0")
+
+[node name="GroundCheck" type="RayCast3D" parent="." unique_id=1478377033]
+transform = Transform3D(0.9396926, -0.34202012, 0, 0.34202012, 0.9396926, 0, 0, 0, 1, 0.51272583, 0, 0)
+target_position = Vector3(0, -2, 0)
+collision_mask = 3
+
+[connection signal="body_entered" from="WaitingArea" to="." method="_on_taxi_enter_follow_range"]
+[connection signal="body_exited" from="WaitingArea" to="." method="_on_taxi_exit_follow_range"]

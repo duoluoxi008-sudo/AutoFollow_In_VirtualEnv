@@ -6,6 +6,14 @@ var position_sensor:Array[PositionSensor3D] = []
 var rgb_sensor:Array[RGBCameraSensor3D] = []
 var grid_sensor:Array[GridSensor3D] = []
 
+@export var raycast_type:Node = null
+@export var position_type:Node = null
+@export var rgb_type:Node = null
+@export var grid_type:Node = null
+
+
+
+
 func _ready() -> void:
 	_collect_sensor_children()
 
@@ -16,15 +24,15 @@ func _collect_sensor_children() -> void:
 	position_sensor.clear()
 	rgb_sensor.clear()
 	grid_sensor.clear()
-	for child in get_children():
-		if child is RayCastSensor3D:
-			raycast_sensor.append(child)
-		elif child is PositionSensor3D:
-			position_sensor.append(child)
-		elif child is RGBCameraSensor3D:
-			rgb_sensor.append(child)
-		elif child is GridSensor3D:
-			grid_sensor.append(child)
+	_init_sensor_arr(raycast_type,raycast_sensor)
+	_init_sensor_arr(position_type,position_sensor)
+	_init_sensor_arr(rgb_type,rgb_sensor)
+	_init_sensor_arr(grid_type,grid_sensor)
+	
+func _init_sensor_arr(sensor_type:Node,sensor_arr:Array):
+	if sensor_type:
+		for child in sensor_type.get_children():
+			sensor_arr.append(child)
 
 # ============================================================================
 # 射线传感器（RayCastSensor3D）
@@ -34,6 +42,7 @@ func _collect_sensor_children() -> void:
 
 ## 拼接全部射线传感器的观测值（用于扩充观测向量）
 	#射线传感器,查找周边物体，每个射线传感器返回的result数组为格式为第i根射线 result[i] = 距离 result[i+1] = 击中的碰撞层 这样交替而成
+#expose
 func get_raycast_observations() -> Array:
 	var result:Array = []
 	for sensor in raycast_sensor:
@@ -68,6 +77,7 @@ func get_raycast_observations_separated() -> Array:
 # ============================================================================
 
 ## 拼接全部位置传感器的观测值
+#expose
 func get_position_observations() -> Array[float]:
 	var result:Array[float] = []
 	for sensor in position_sensor:

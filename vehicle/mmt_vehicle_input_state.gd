@@ -25,17 +25,21 @@ class_name MMTVehicleInputState
 ## 驾驶员向前行驶的意图 [0, 1]。
 ## 在带有自动变速箱的车辆上，控制器只需表达“向前行驶”的愿望。
 ## 车辆自身的 `auto_reverse` 逻辑负责判断是否需要先刹车。
+#expose
 var throttle_forward: float = 0.0
 
 ## 驾驶员向后行驶的意图 [0, 1]。
+#expose
 var throttle_back: float = 0.0
 
 ## 转向轴 [-1, 1]。正值表示向左转，
 ## 这与 Input.get_axis("right", "left") 的语义一致。
+#expose
 var steer_axis: float = 0.0
 
 ## 刹车意图 [0, 1]。它独立于油门，
 ## 用于停车或紧急制动等场景。
+#expose
 var brake: float = 0.0
 
 

@@ -1,0 +1,130 @@
+extends PositionSensor3D
+class_name PassengerPositionSensor3D
+
+# ============================================================================
+# PassengerPositionSensor3D —— 乘客目标的 PositionSensor
+#
+# 感知"本车当前应前往的目标乘客"的相对位置，为策略提供导航目标。
+# 目标解析：
+#   - 若设置了 objects_to_observe（手动指定目标），直接使用它。
+#   - 否则，通过**本车所属 arena** 的 PassengerManager 按本车视角取最佳目标
+#     （空车时 assign_passenger()；竞争场景下每车独立选最佳，先到先得）。
+#   - 载客时（have_passenger）改报所载乘客的目的地（若存在）。
+#
+# ⚠️ 管理器必须按 arena 取：多 arena 同进程时用全局组会拿到第一个场地的 manager，
+# 于是兜底路径会从别的场地选目标（物理上开不到）。
+# 主路径（读 `current_target`）本身是 arena 正确的 —— 目标由 TaxiServiceComponent
+# 维护，而那个组件已经按 arena 取 manager。
+#
+# 继承 PositionSensor3D，会被 SensorManager 自动收集进 position_sensor 数组。
+# ============================================================================
+
+## 是否载客（接送逻辑负责维护；本传感器据此决定报"乘客"还是"目的地"）
+var have_passenger: bool = false
+
+
+func add_object_to_observe(target: Passenger) -> void:
+	objects_to_observe.append(target)
+
+
+func _find_vehicle() -> MMTVehicleBody:
+	var n: Node = get_parent()
+	while n != null:
+		if n is MMTVehicleBody:
+			return n as MMTVehicleBody
+		n = n.get_parent()
+	return null
+
+
+## 沿父链找本车的接送组件（读 has_passenger / carried_passenger / current_target）。
+## 比"遍历 taxi_agents 组找匹配车辆"更快，也不跨 arena。
+func _get_own_service() -> TaxiServiceComponent:
+	return TaxiServiceComponent.find_for(self)
+
+
+## 取得**本车所属 arena** 的乘客管理器；没有 arena 时兜底全局查找。
+func _get_manager() -> PassengerManager:
+	var arena := TrainingArena.of(self)
+	if arena != null:
+		var m := arena.get_passenger_manager()
+		if m != null:
+			return m
+	return get_tree().get_first_node_in_group("passenger_manager") as PassengerManager
+
+
+## 解析当前要报告的目标（一个 Node3D）；无目标返回 null。
+func _resolve_target() -> Node3D:
+	# 手动指定优先
+	for obj in objects_to_observe:
+		if is_instance_valid(obj):
+			return obj
+
+	var svc := _get_own_service()
+	if svc == null:
+		return null
+
+	have_passenger = svc.is_carrying()
+
+	# 载客：报所载乘客的目的地（若已设置）
+	if have_passenger and svc.carried_passenger != null and is_instance_valid(svc.carried_passenger):
+		var dest: Node3D = svc.carried_passenger.destination
+		if dest != null and is_instance_valid(dest):
+			return dest
+
+	# 空车：优先用业务组件锁定的目标（保证与驾驶层一致）
+	var t: Passenger = svc.current_target
+	if t != null and is_instance_valid(t) and t.is_waiting:
+		return t
+	# 兜底：向本场地的管理器按本车视角取最佳目标。
+	# ⚠️ 必须用**只读**的 peek_passenger：这是观测函数，用会写认领表的
+	# assign_passenger 会把乘客"认领"到本公司名下却不交给业务层，
+	# 于是业务层的 acquire_target() 之后永远拿不到它 —— 表现为
+	# "同样空车，有的车传感器指向乘客、有的什么都不显示"，且后者一直绕圈学不动。
+	# 详见 PassengerDistributeManager.peek_best_target_for 的注释。
+	var mgr := _get_manager()
+	if mgr != null:
+		return mgr.peek_passenger(svc)
+	return null
+
+
+func get_observation():
+	var observations: Array[float] = []
+
+	if debug_lines:
+		mesh.clear_surfaces()
+		mesh.surface_begin(Mesh.PRIMITIVE_LINES)
+		mesh.surface_set_color(debug_color)
+
+	var target := _resolve_target()
+	var relative_position := Vector3.ZERO
+	if target != null and is_instance_valid(target):
+		relative_position = to_local(target.global_position)
+
+	if debug_lines:
+		mesh.surface_add_vertex(Vector3.ZERO)
+		mesh.surface_add_vertex(relative_position)
+
+	var direction := Vector3.ZERO
+	var distance := 0.0
+	if use_separate_direction:
+		direction = relative_position.normalized()
+		distance = min(relative_position.length() / max_distance, 1.0)
+		if include_x:
+			observations.append(direction.x)
+		if include_y:
+			observations.append(direction.y)
+		if include_z:
+			observations.append(direction.z)
+		observations.append(distance)
+	else:
+		relative_position = relative_position.limit_length(max_distance) / max_distance
+		if include_x:
+			observations.append(relative_position.x)
+		if include_y:
+			observations.append(relative_position.y)
+		if include_z:
+			observations.append(relative_position.z)
+
+	if debug_lines:
+		mesh.surface_end()
+	return observations

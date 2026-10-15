@@ -10,10 +10,29 @@ class_name MMTGearboxComponentTEMP
 @export var auto_reverse: bool = true
 @export var use_fluid_coupling: bool = false
 
-@export_category("发动机同步（对手动/离合至关重要）")
-# 这些数值必须与所连接的发动机组件一致，以保证计算准确。
-@export var engine_idle_rpm: float = 800.0
-@export var engine_max_rpm: float = 6000.0
+@export_category("发动机同步")
+## 红线保护的触发比例（× 发动机 max_rpm）：0.98 = 接近爆转就强制升挡。
+@export var redline_ratio: float = 0.98
+
+# 未连接引擎规格时的兜底值（正常情况下由引擎通过 set_engine_spec 推入）。
+const FALLBACK_ENGINE_IDLE_RPM := 800.0
+const FALLBACK_ENGINE_MAX_RPM := 6000.0
+
+## 由上游引擎推入的发动机规格。传动系协议只允许"向下"引用，变速箱拿不到
+## 引擎的引用，所以方向反过来：引擎把同一份规格推给它（单一真相来源）。
+var engine_spec: EngineSpec = null
+
+## 规格只读访问器：旧调用点 engine_idle_rpm / engine_max_rpm 保持可用，
+## 但数值统一来自 engine_spec，不再需要人工与引擎保持一致。
+var engine_idle_rpm: float:
+	get: return engine_spec.idle_rpm if engine_spec else FALLBACK_ENGINE_IDLE_RPM
+var engine_max_rpm: float:
+	get: return engine_spec.max_rpm if engine_spec else FALLBACK_ENGINE_MAX_RPM
+
+
+## 由引擎组件调用，注入发动机规格。
+func set_engine_spec(s: EngineSpec) -> void:
+	engine_spec = s
 
 @export_category("变速箱参数")
 @export var gear_ratios: Array[float] = [-4.73, 0.0, 4.73, 2.73, 1.71, 1.13, 0.81]
@@ -119,7 +138,7 @@ func update_shift_logic(engine_rpm: float, throttle_intent: float, forward_speed
 
 		# --- 发动机红线保护 ---
 		# 若发动机濒临爆转，强制升挡，忽略其它逻辑。
-		var is_redlining = engine_rpm > (engine_max_rpm * 0.98)
+		var is_redlining = engine_rpm > (engine_max_rpm * redline_ratio)
 
 		var can_upshift_safely = true
 		if current_gear_index < gear_ratios.size() - 1 and not is_redlining:

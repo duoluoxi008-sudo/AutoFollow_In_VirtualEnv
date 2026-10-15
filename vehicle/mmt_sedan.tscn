@@ -7,16 +7,19 @@
 [ext_resource type="Script" uid="uid://c4y4ui8rjck22" path="res://vehicle/mmt_gearbox_component.gd" id="4_8ps3r"]
 [ext_resource type="Script" uid="uid://cpysfyfrbohwh" path="res://vehicle/mmt_debug_display_2d.gd" id="5_8ps3r"]
 [ext_resource type="Script" uid="uid://cjr6ntoyfc8ck" path="res://vehicle/mmt_differential_component.gd" id="6_26xap"]
+[ext_resource type="Script" uid="uid://blfmvpju5r5uo" path="res://vehicle/mmt_fwd.gd" id="6_kpmyk"]
 [ext_resource type="Script" uid="uid://d3n0tpnw4446d" path="res://vehicle/mmt_anti_roll_bar.gd" id="7_qw1uf"]
 [ext_resource type="PackedScene" uid="uid://ch8tdjb2733yt" path="res://vehicle/visuals/santana/santana_body.glb" id="8_7nokl"]
 [ext_resource type="Script" uid="uid://drf1bew7jyodo" path="res://vehicle/visuals/mmt_wheel_visualizer.gd" id="8_qx5fr"]
 [ext_resource type="Script" uid="uid://dembvnti5442q" path="res://vehicle/mmt_steering_component.gd" id="9_64qgb"]
 [ext_resource type="Script" uid="uid://dxfjhm518lvdy" path="res://vehicle/mmt_input_filter_component.gd" id="11_oboxw"]
 [ext_resource type="Script" uid="uid://b4u4udeyygg6u" path="res://vehicle/mmt_tcs_component.gd" id="11_qcqm5"]
-[ext_resource type="Script" uid="uid://c4ua1fuhwjh87" path="res://addons/godot_rl_agents/sensors/sensors_3d/RaycastSensor3D.gd" id="14_kfwlb"]
-[ext_resource type="Script" uid="uid://dw0o06d00ba3" path="res://vehicle/AI/AITaxiContorller.gd" id="15_kfwlb"]
-[ext_resource type="Script" uid="uid://bd7b3tdcb7ay4" path="res://vehicle/AI/SensorManager.gd" id="15_kpmyk"]
-[ext_resource type="Script" uid="uid://bweny06faf2b4" path="res://vehicle/RewardManager.gd" id="17_3oqn0"]
+[ext_resource type="Script" uid="uid://bbhjgrnyq7wux" path="res://vehicle/visuals/santana/PlateSwitch.gd" id="13_x4efl"]
+[ext_resource type="PackedScene" uid="uid://c0oa15ovhjrf6" path="res://vehicle/visuals/santana/TaxiPlateGreen.glb" id="14_87q8v"]
+[ext_resource type="PackedScene" uid="uid://d1m8osycvwfhl" path="res://vehicle/visuals/santana/TaxiPlateRed.glb" id="15_rslhw"]
+[ext_resource type="Script" uid="uid://cv5ic6ba8duew" path="res://vehicle/taxi/TaxiServiceComponent.gd" id="22_taxisvc"]
+[ext_resource type="Script" uid="uid://bc0q3uwojqa37" path="res://vehicle/taxi/VehicleStateResetter.gd" id="23_taxirst"]
+[ext_resource type="Resource" path="res://vehicle/engine_spec_santana.tres" id="24_engspec"]
 
 [sub_resource type="PhysicsMaterial" id="PhysicsMaterial_71kbo"]
 
@@ -155,6 +158,7 @@ damping = 1500.0
 tire_lat_stiffness = 140000.0
 tire_long_stiffness = 150000.0
 relaxation_length = 0.1
+is_driven = true
 ground_collision_mask = 31
 wheel_inertia = 1.0
 metadata/_custom_type_script = "uid://2c1j0nwkn6oy"
@@ -168,6 +172,7 @@ damping = 1500.0
 tire_lat_stiffness = 140000.0
 tire_long_stiffness = 150000.0
 relaxation_length = 0.1
+is_driven = true
 ground_collision_mask = 31
 wheel_inertia = 1.0
 metadata/_custom_type_script = "uid://2c1j0nwkn6oy"
@@ -177,26 +182,37 @@ metadata/_custom_type_script = "uid://2c1j0nwkn6oy"
 [node name="Engine" type="Node" parent="MMT_Physics_Nodes/Drivetrain" unique_id=71000842 node_paths=PackedStringArray("output_node")]
 script = ExtResource("3_f11t7")
 output_node = NodePath("../Gearbox")
-torque_curve = ExtResource("4_2hqnl")
-engine_drag_base = 10.0
+spec = ExtResource("24_engspec")
 
 [node name="Gearbox" type="Node" parent="MMT_Physics_Nodes/Drivetrain" unique_id=1184206002 node_paths=PackedStringArray("output_node")]
 script = ExtResource("4_8ps3r")
-output_node = NodePath("../DiffFront")
-use_fluid_coupling = true
-engine_idle_rpm = 4500.0
-engine_max_rpm = 6200.0
+output_node = NodePath("../MMTFourWheelD")
 shift_up_rpm = 3200.0
 shift_down_rpm = 1400.0
 shift_duration = 0.3
 kickdown_up_rpm = 5600.0
 kickdown_down_rpm = 2800.0
+enable_heavy_load_logic = true
 shift_cooldown = 0.3
+
+[node name="MMTFourWheelD" type="Node" parent="MMT_Physics_Nodes/Drivetrain" unique_id=891143890 node_paths=PackedStringArray("output_front_diff", "output_rear_diff")]
+script = ExtResource("6_kpmyk")
+output_front_diff = NodePath("../DiffFront")
+output_rear_diff = NodePath("../DiffRear")
+coupling_stiffness = 0.5
+metadata/_custom_type_script = "uid://blfmvpju5r5uo"
 
 [node name="DiffFront" type="Node" parent="MMT_Physics_Nodes/Drivetrain" unique_id=531807157 node_paths=PackedStringArray("output_left", "output_right")]
 script = ExtResource("6_26xap")
 output_left = NodePath("../../Wheels/Wheel_FL")
 output_right = NodePath("../../Wheels/Wheel_FR")
+is_driven = null
+limited_slip_factor = null
+
+[node name="DiffRear" type="Node" parent="MMT_Physics_Nodes/Drivetrain" unique_id=570185778 node_paths=PackedStringArray("output_left", "output_right")]
+script = ExtResource("6_26xap")
+output_left = NodePath("../../Wheels/Wheel_RL")
+output_right = NodePath("../../Wheels/Wheel_RR")
 is_driven = null
 limited_slip_factor = null
 
@@ -206,7 +222,7 @@ script = ExtResource("11_oboxw")
 [node name="TCS" type="Node" parent="MMT_Physics_Nodes/Drivetrain" unique_id=142286218 node_paths=PackedStringArray("input_filter", "driven_wheels")]
 script = ExtResource("11_qcqm5")
 input_filter = NodePath("../InputFilter")
-driven_wheels = [NodePath("../../Wheels/Wheel_FL"), NodePath("../../Wheels/Wheel_FR")]
+driven_wheels = [NodePath("../../Wheels/Wheel_FL"), NodePath("../../Wheels/Wheel_FR"), NodePath("../../Wheels/Wheel_RL"), NodePath("../../Wheels/Wheel_RR")]
 
 [node name="Steering" type="Node" parent="MMT_Physics_Nodes/Drivetrain" unique_id=828559853]
 script = ExtResource("9_64qgb")
@@ -338,6 +354,18 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.108462304, -0.060110867, 0)
 mesh = SubResource("CylinderMesh_7nokl")
 skeleton = NodePath("../../../..")
 
+[node name="PlateSwitch" type="Node" parent="MMT_Visual_Nodes" unique_id=511321566 node_paths=PackedStringArray("empty_car", "full_car")]
+script = ExtResource("13_x4efl")
+empty_car = NodePath("../TaxiPlateGreen")
+full_car = NodePath("../TaxiPlateRed")
+
+[node name="TaxiPlateGreen" parent="MMT_Visual_Nodes" unique_id=99313094 instance=ExtResource("14_87q8v")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.0660095, 0)
+
+[node name="TaxiPlateRed" parent="MMT_Visual_Nodes" unique_id=1960654011 instance=ExtResource("15_rslhw")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.0660095, 0)
+visible = false
+
 [node name="MMTDebugDisplay" type="Control" parent="." unique_id=182419000]
 layout_mode = 3
 anchors_preset = 0
@@ -349,1046 +377,17 @@ viz_sections = 135
 [node name="Marker3D" type="Marker3D" parent="." unique_id=1079935575]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.3242531, -0.35)
 
-[node name="Rl" type="Node" parent="." unique_id=1529370091]
+[node name="Camera3D" type="Camera3D" parent="." unique_id=1629082051 groups=["AIVehicleCam"]]
+transform = Transform3D(1, 0, 0, 0, 0.92718387, 0.37460658, 0, -0.37460658, 0.92718387, 0, 3.0089645, 3.689087)
 
-[node name="AITaxiController" type="Node3D" parent="Rl" unique_id=383645183 node_paths=PackedStringArray("sensor_manager", "reward_manager")]
-script = ExtResource("15_kfwlb")
-sensor_manager = NodePath("../Sensor")
-reward_manager = NodePath("../Reward")
-metadata/_custom_type_script = "uid://dw0o06d00ba3"
+[node name="TaxiService" type="Node3D" parent="." unique_id=741200201]
+script = ExtResource("22_taxisvc")
+metadata/_custom_type_script = "uid://cv5ic6ba8duew"
 
-[node name="Sensor" type="Node" parent="Rl" unique_id=1512662067]
-script = ExtResource("15_kpmyk")
+[node name="VehicleStateResetter" type="Node" parent="." unique_id=741200202]
+script = ExtResource("23_taxirst")
+metadata/_custom_type_script = "uid://bc0q3uwojqa37"
 
-[node name="RayCast" type="Node" parent="Rl/Sensor" unique_id=2050836007]
-
-[node name="Front" type="Node" parent="Rl/Sensor/RayCast" unique_id=999963704]
-
-[node name="FarSightFront" type="Node3D" parent="Rl/Sensor/RayCast/Front" unique_id=1552233232]
-transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 0, 0.5, -2.25)
-script = ExtResource("14_kfwlb")
-collision_mask = 31
-boolean_class_mask = 31
-n_rays_height = 3.0
-ray_length = 7.0
-cone_width = 180.0
-cone_height = 40.0
-class_sensor = true
-
-[node name="node_0_0 0_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Front/FarSightFront" unique_id=592824823]
-enabled = false
-target_position = Vector3(-6.579224, -1.6143111, 1.7628978)
-collision_mask = 31
-
-[node name="node_0_0 1_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Front/FarSightFront" unique_id=1414804802]
-enabled = false
-target_position = Vector3(-6.761481, 2.1702293e-16, 1.8117334)
-collision_mask = 31
-
-[node name="node_0_0 2_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Front/FarSightFront" unique_id=159481847]
-enabled = false
-target_position = Vector3(-6.579224, 1.6143111, 1.7628978)
-collision_mask = 31
-
-[node name="node_1_0 0_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Front/FarSightFront" unique_id=1070785108]
-enabled = false
-target_position = Vector3(-4.8163266, -1.6143111, 4.8163266)
-collision_mask = 31
-
-[node name="node_1_0 1_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Front/FarSightFront" unique_id=947912146]
-enabled = false
-target_position = Vector3(-4.9497476, 2.1702293e-16, 4.9497476)
-collision_mask = 31
-
-[node name="node_1_0 2_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Front/FarSightFront" unique_id=151694676]
-enabled = false
-target_position = Vector3(-4.8163266, 1.6143111, 4.8163266)
-collision_mask = 31
-
-[node name="node_2_0 0_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Front/FarSightFront" unique_id=375628101]
-enabled = false
-target_position = Vector3(-1.7628978, -1.6143111, 6.579224)
-collision_mask = 31
-
-[node name="node_2_0 1_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Front/FarSightFront" unique_id=1490175253]
-enabled = false
-target_position = Vector3(-1.8117334, 2.1702293e-16, 6.761481)
-collision_mask = 31
-
-[node name="node_2_0 2_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Front/FarSightFront" unique_id=14490402]
-enabled = false
-target_position = Vector3(-1.7628978, 1.6143111, 6.579224)
-collision_mask = 31
-
-[node name="node_3_0 0_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Front/FarSightFront" unique_id=621875009]
-enabled = false
-target_position = Vector3(1.7628978, -1.6143111, 6.579224)
-collision_mask = 31
-
-[node name="node_3_0 1_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Front/FarSightFront" unique_id=199771926]
-enabled = false
-target_position = Vector3(1.8117334, 2.1702293e-16, 6.761481)
-collision_mask = 31
-
-[node name="node_3_0 2_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Front/FarSightFront" unique_id=982084481]
-enabled = false
-target_position = Vector3(1.7628978, 1.6143111, 6.579224)
-collision_mask = 31
-
-[node name="node_4_0 0_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Front/FarSightFront" unique_id=605062539]
-enabled = false
-target_position = Vector3(4.8163266, -1.6143111, 4.8163266)
-collision_mask = 31
-
-[node name="node_4_0 1_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Front/FarSightFront" unique_id=1439117716]
-enabled = false
-target_position = Vector3(4.9497476, 2.1702293e-16, 4.9497476)
-collision_mask = 31
-
-[node name="node_4_0 2_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Front/FarSightFront" unique_id=2138801531]
-enabled = false
-target_position = Vector3(4.8163266, 1.6143111, 4.8163266)
-collision_mask = 31
-
-[node name="node_5_0 0_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Front/FarSightFront" unique_id=19333273]
-enabled = false
-target_position = Vector3(6.579224, -1.6143111, 1.7628978)
-collision_mask = 31
-
-[node name="node_5_0 1_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Front/FarSightFront" unique_id=615160125]
-enabled = false
-target_position = Vector3(6.761481, 2.1702293e-16, 1.8117334)
-collision_mask = 31
-
-[node name="node_5_0 2_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Front/FarSightFront" unique_id=1713509581]
-enabled = false
-target_position = Vector3(6.579224, 1.6143111, 1.7628978)
-collision_mask = 31
-
-[node name="NearSightFront" type="Node3D" parent="Rl/Sensor/RayCast/Front" unique_id=2042375437]
-transform = Transform3D(-1, 0, -1.509958e-07, 0, 1, 0, 1.509958e-07, 0, -1, 0, 0.5, -2.25)
-script = ExtResource("14_kfwlb")
-collision_mask = 31
-boolean_class_mask = 31
-n_rays_width = 10.0
-n_rays_height = 3.0
-ray_length = 3.0
-cone_width = 180.0
-class_sensor = true
-
-[node name="node_0_0 0_0" type="RayCast3D" parent="Rl/Sensor/RayCast/Front/NearSightFront" unique_id=124249784]
-enabled = false
-target_position = Vector3(-2.7843704, -1.0260605, 0.44100094)
-collision_mask = 31
-
-[node name="node_0_0 1_0" type="RayCast3D" parent="Rl/Sensor/RayCast/Front/NearSightFront" unique_id=1086994698]
-enabled = false
-target_position = Vector3(-2.963065, 0, 0.4693034)
-collision_mask = 31
-
-[node name="node_0_0 2_0" type="RayCast3D" parent="Rl/Sensor/RayCast/Front/NearSightFront" unique_id=1818315104]
-enabled = false
-target_position = Vector3(-2.7843704, 1.0260605, 0.44100094)
-collision_mask = 31
-
-[node name="node_1_0 0_0" type="RayCast3D" parent="Rl/Sensor/RayCast/Front/NearSightFront" unique_id=1488736706]
-enabled = false
-target_position = Vector3(-2.5118167, -1.0260605, 1.2798345)
-collision_mask = 31
-
-[node name="node_1_0 1_0" type="RayCast3D" parent="Rl/Sensor/RayCast/Front/NearSightFront" unique_id=1557905004]
-enabled = false
-target_position = Vector3(-2.6730196, 0, 1.3619715)
-collision_mask = 31
-
-[node name="node_1_0 2_0" type="RayCast3D" parent="Rl/Sensor/RayCast/Front/NearSightFront" unique_id=53552163]
-enabled = false
-target_position = Vector3(-2.5118167, 1.0260605, 1.2798345)
-collision_mask = 31
-
-[node name="node_2_0 0_0" type="RayCast3D" parent="Rl/Sensor/RayCast/Front/NearSightFront" unique_id=1874145991]
-enabled = false
-target_position = Vector3(-1.9933891, -1.0260605, 1.9933891)
-collision_mask = 31
-
-[node name="node_2_0 1_0" type="RayCast3D" parent="Rl/Sensor/RayCast/Front/NearSightFront" unique_id=125791172]
-enabled = false
-target_position = Vector3(-2.1213202, 0, 2.1213202)
-collision_mask = 31
-
-[node name="node_2_0 2_0" type="RayCast3D" parent="Rl/Sensor/RayCast/Front/NearSightFront" unique_id=1775817508]
-enabled = false
-target_position = Vector3(-1.9933891, 1.0260605, 1.9933891)
-collision_mask = 31
-
-[node name="node_3_0 0_0" type="RayCast3D" parent="Rl/Sensor/RayCast/Front/NearSightFront" unique_id=1455041825]
-enabled = false
-target_position = Vector3(-1.2798345, -1.0260605, 2.5118167)
-collision_mask = 31
-
-[node name="node_3_0 1_0" type="RayCast3D" parent="Rl/Sensor/RayCast/Front/NearSightFront" unique_id=19561901]
-enabled = false
-target_position = Vector3(-1.3619715, 0, 2.6730196)
-collision_mask = 31
-
-[node name="node_3_0 2_0" type="RayCast3D" parent="Rl/Sensor/RayCast/Front/NearSightFront" unique_id=2025251743]
-enabled = false
-target_position = Vector3(-1.2798345, 1.0260605, 2.5118167)
-collision_mask = 31
-
-[node name="node_4_0 0_0" type="RayCast3D" parent="Rl/Sensor/RayCast/Front/NearSightFront" unique_id=607066574]
-enabled = false
-target_position = Vector3(-0.44100094, -1.0260605, 2.7843704)
-collision_mask = 31
-
-[node name="node_4_0 1_0" type="RayCast3D" parent="Rl/Sensor/RayCast/Front/NearSightFront" unique_id=163487082]
-enabled = false
-target_position = Vector3(-0.4693034, 0, 2.963065)
-collision_mask = 31
-
-[node name="node_4_0 2_0" type="RayCast3D" parent="Rl/Sensor/RayCast/Front/NearSightFront" unique_id=1474270706]
-enabled = false
-target_position = Vector3(-0.44100094, 1.0260605, 2.7843704)
-collision_mask = 31
-
-[node name="node_5_0 0_0" type="RayCast3D" parent="Rl/Sensor/RayCast/Front/NearSightFront" unique_id=214785299]
-enabled = false
-target_position = Vector3(0.44100094, -1.0260605, 2.7843704)
-collision_mask = 31
-
-[node name="node_5_0 1_0" type="RayCast3D" parent="Rl/Sensor/RayCast/Front/NearSightFront" unique_id=411699690]
-enabled = false
-target_position = Vector3(0.4693034, 0, 2.963065)
-collision_mask = 31
-
-[node name="node_5_0 2_0" type="RayCast3D" parent="Rl/Sensor/RayCast/Front/NearSightFront" unique_id=1562698383]
-enabled = false
-target_position = Vector3(0.44100094, 1.0260605, 2.7843704)
-collision_mask = 31
-
-[node name="node_6_0 0_0" type="RayCast3D" parent="Rl/Sensor/RayCast/Front/NearSightFront" unique_id=1578850190]
-enabled = false
-target_position = Vector3(1.2798345, -1.0260605, 2.5118167)
-collision_mask = 31
-
-[node name="node_6_0 1_0" type="RayCast3D" parent="Rl/Sensor/RayCast/Front/NearSightFront" unique_id=193324217]
-enabled = false
-target_position = Vector3(1.3619715, 0, 2.6730196)
-collision_mask = 31
-
-[node name="node_6_0 2_0" type="RayCast3D" parent="Rl/Sensor/RayCast/Front/NearSightFront" unique_id=472886012]
-enabled = false
-target_position = Vector3(1.2798345, 1.0260605, 2.5118167)
-collision_mask = 31
-
-[node name="node_7_0 0_0" type="RayCast3D" parent="Rl/Sensor/RayCast/Front/NearSightFront" unique_id=1089169921]
-enabled = false
-target_position = Vector3(1.9933891, -1.0260605, 1.9933891)
-collision_mask = 31
-
-[node name="node_7_0 1_0" type="RayCast3D" parent="Rl/Sensor/RayCast/Front/NearSightFront" unique_id=90891228]
-enabled = false
-target_position = Vector3(2.1213202, 0, 2.1213202)
-collision_mask = 31
-
-[node name="node_7_0 2_0" type="RayCast3D" parent="Rl/Sensor/RayCast/Front/NearSightFront" unique_id=1479692210]
-enabled = false
-target_position = Vector3(1.9933891, 1.0260605, 1.9933891)
-collision_mask = 31
-
-[node name="node_8_0 0_0" type="RayCast3D" parent="Rl/Sensor/RayCast/Front/NearSightFront" unique_id=2073627697]
-enabled = false
-target_position = Vector3(2.5118167, -1.0260605, 1.2798345)
-collision_mask = 31
-
-[node name="node_8_0 1_0" type="RayCast3D" parent="Rl/Sensor/RayCast/Front/NearSightFront" unique_id=1045122296]
-enabled = false
-target_position = Vector3(2.6730196, 0, 1.3619715)
-collision_mask = 31
-
-[node name="node_8_0 2_0" type="RayCast3D" parent="Rl/Sensor/RayCast/Front/NearSightFront" unique_id=442444311]
-enabled = false
-target_position = Vector3(2.5118167, 1.0260605, 1.2798345)
-collision_mask = 31
-
-[node name="node_9_0 0_0" type="RayCast3D" parent="Rl/Sensor/RayCast/Front/NearSightFront" unique_id=1660403692]
-enabled = false
-target_position = Vector3(2.7843704, -1.0260605, 0.44100094)
-collision_mask = 31
-
-[node name="node_9_0 1_0" type="RayCast3D" parent="Rl/Sensor/RayCast/Front/NearSightFront" unique_id=1805932703]
-enabled = false
-target_position = Vector3(2.963065, 0, 0.4693034)
-collision_mask = 31
-
-[node name="node_9_0 2_0" type="RayCast3D" parent="Rl/Sensor/RayCast/Front/NearSightFront" unique_id=1217266114]
-enabled = false
-target_position = Vector3(2.7843704, 1.0260605, 0.44100094)
-collision_mask = 31
-
-[node name="Back" type="Node" parent="Rl/Sensor/RayCast" unique_id=957146433]
-
-[node name="FarSightBack" type="Node3D" parent="Rl/Sensor/RayCast/Back" unique_id=1634397072]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 2.35)
-script = ExtResource("14_kfwlb")
-collision_mask = 31
-boolean_class_mask = 31
-n_rays_height = 3.0
-ray_length = 7.0
-cone_width = 180.0
-cone_height = 40.0
-class_sensor = true
-
-[node name="node_0_0 0_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Back/FarSightBack" unique_id=1785667793]
-enabled = false
-target_position = Vector3(-6.579224, -1.6143111, 1.7628978)
-collision_mask = 31
-
-[node name="node_0_0 1_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Back/FarSightBack" unique_id=1125739008]
-enabled = false
-target_position = Vector3(-6.761481, 2.1702293e-16, 1.8117334)
-collision_mask = 31
-
-[node name="node_0_0 2_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Back/FarSightBack" unique_id=1723465107]
-enabled = false
-target_position = Vector3(-6.579224, 1.6143111, 1.7628978)
-collision_mask = 31
-
-[node name="node_1_0 0_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Back/FarSightBack" unique_id=59240962]
-enabled = false
-target_position = Vector3(-4.8163266, -1.6143111, 4.8163266)
-collision_mask = 31
-
-[node name="node_1_0 1_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Back/FarSightBack" unique_id=191272700]
-enabled = false
-target_position = Vector3(-4.9497476, 2.1702293e-16, 4.9497476)
-collision_mask = 31
-
-[node name="node_1_0 2_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Back/FarSightBack" unique_id=579888041]
-enabled = false
-target_position = Vector3(-4.8163266, 1.6143111, 4.8163266)
-collision_mask = 31
-
-[node name="node_2_0 0_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Back/FarSightBack" unique_id=988624366]
-enabled = false
-target_position = Vector3(-1.7628978, -1.6143111, 6.579224)
-collision_mask = 31
-
-[node name="node_2_0 1_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Back/FarSightBack" unique_id=531420029]
-enabled = false
-target_position = Vector3(-1.8117334, 2.1702293e-16, 6.761481)
-collision_mask = 31
-
-[node name="node_2_0 2_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Back/FarSightBack" unique_id=182393062]
-enabled = false
-target_position = Vector3(-1.7628978, 1.6143111, 6.579224)
-collision_mask = 31
-
-[node name="node_3_0 0_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Back/FarSightBack" unique_id=1138265373]
-enabled = false
-target_position = Vector3(1.7628978, -1.6143111, 6.579224)
-collision_mask = 31
-
-[node name="node_3_0 1_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Back/FarSightBack" unique_id=1580383642]
-enabled = false
-target_position = Vector3(1.8117334, 2.1702293e-16, 6.761481)
-collision_mask = 31
-
-[node name="node_3_0 2_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Back/FarSightBack" unique_id=185685347]
-enabled = false
-target_position = Vector3(1.7628978, 1.6143111, 6.579224)
-collision_mask = 31
-
-[node name="node_4_0 0_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Back/FarSightBack" unique_id=1927981286]
-enabled = false
-target_position = Vector3(4.8163266, -1.6143111, 4.8163266)
-collision_mask = 31
-
-[node name="node_4_0 1_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Back/FarSightBack" unique_id=1278294044]
-enabled = false
-target_position = Vector3(4.9497476, 2.1702293e-16, 4.9497476)
-collision_mask = 31
-
-[node name="node_4_0 2_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Back/FarSightBack" unique_id=843066412]
-enabled = false
-target_position = Vector3(4.8163266, 1.6143111, 4.8163266)
-collision_mask = 31
-
-[node name="node_5_0 0_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Back/FarSightBack" unique_id=656873927]
-enabled = false
-target_position = Vector3(6.579224, -1.6143111, 1.7628978)
-collision_mask = 31
-
-[node name="node_5_0 1_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Back/FarSightBack" unique_id=1963857403]
-enabled = false
-target_position = Vector3(6.761481, 2.1702293e-16, 1.8117334)
-collision_mask = 31
-
-[node name="node_5_0 2_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Back/FarSightBack" unique_id=668869954]
-enabled = false
-target_position = Vector3(6.579224, 1.6143111, 1.7628978)
-collision_mask = 31
-
-[node name="NearSightBack" type="Node3D" parent="Rl/Sensor/RayCast/Back" unique_id=1927814264]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 2.35)
-script = ExtResource("14_kfwlb")
-collision_mask = 31
-boolean_class_mask = 31
-n_rays_width = 10.0
-n_rays_height = 3.0
-ray_length = 3.0
-cone_width = 180.0
-class_sensor = true
-
-[node name="node_0_0 0_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Back/NearSightBack" unique_id=1601764784]
-enabled = false
-target_position = Vector3(-2.7843704, -1.0260605, 0.44100094)
-collision_mask = 31
-
-[node name="node_0_0 1_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Back/NearSightBack" unique_id=1270664317]
-enabled = false
-target_position = Vector3(-2.963065, 0, 0.4693034)
-collision_mask = 31
-
-[node name="node_0_0 2_0" type="RayCast3D" parent="Rl/Sensor/RayCast/Back/NearSightBack" unique_id=1265630113]
-enabled = false
-target_position = Vector3(-2.7843704, 1.0260605, 0.44100094)
-collision_mask = 31
-
-[node name="node_1_0 0_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Back/NearSightBack" unique_id=1233271034]
-enabled = false
-target_position = Vector3(-2.5118167, -1.0260605, 1.2798345)
-collision_mask = 31
-
-[node name="node_1_0 1_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Back/NearSightBack" unique_id=270906670]
-enabled = false
-target_position = Vector3(-2.6730196, 0, 1.3619715)
-collision_mask = 31
-
-[node name="node_1_0 2_0" type="RayCast3D" parent="Rl/Sensor/RayCast/Back/NearSightBack" unique_id=2014055123]
-enabled = false
-target_position = Vector3(-2.5118167, 1.0260605, 1.2798345)
-collision_mask = 31
-
-[node name="node_2_0 0_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Back/NearSightBack" unique_id=1474568310]
-enabled = false
-target_position = Vector3(-1.9933891, -1.0260605, 1.9933891)
-collision_mask = 31
-
-[node name="node_2_0 1_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Back/NearSightBack" unique_id=1319036263]
-enabled = false
-target_position = Vector3(-2.1213202, 0, 2.1213202)
-collision_mask = 31
-
-[node name="node_2_0 2_0" type="RayCast3D" parent="Rl/Sensor/RayCast/Back/NearSightBack" unique_id=49903799]
-enabled = false
-target_position = Vector3(-1.9933891, 1.0260605, 1.9933891)
-collision_mask = 31
-
-[node name="node_3_0 0_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Back/NearSightBack" unique_id=2122564675]
-enabled = false
-target_position = Vector3(-1.2798345, -1.0260605, 2.5118167)
-collision_mask = 31
-
-[node name="node_3_0 1_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Back/NearSightBack" unique_id=573256972]
-enabled = false
-target_position = Vector3(-1.3619715, 0, 2.6730196)
-collision_mask = 31
-
-[node name="node_3_0 2_0" type="RayCast3D" parent="Rl/Sensor/RayCast/Back/NearSightBack" unique_id=1872151062]
-enabled = false
-target_position = Vector3(-1.2798345, 1.0260605, 2.5118167)
-collision_mask = 31
-
-[node name="node_4_0 0_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Back/NearSightBack" unique_id=877411743]
-enabled = false
-target_position = Vector3(-0.44100094, -1.0260605, 2.7843704)
-collision_mask = 31
-
-[node name="node_4_0 1_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Back/NearSightBack" unique_id=1356956761]
-enabled = false
-target_position = Vector3(-0.4693034, 0, 2.963065)
-collision_mask = 31
-
-[node name="node_4_0 2_0" type="RayCast3D" parent="Rl/Sensor/RayCast/Back/NearSightBack" unique_id=229102574]
-enabled = false
-target_position = Vector3(-0.44100094, 1.0260605, 2.7843704)
-collision_mask = 31
-
-[node name="node_5_0 0_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Back/NearSightBack" unique_id=1925071179]
-enabled = false
-target_position = Vector3(0.44100094, -1.0260605, 2.7843704)
-collision_mask = 31
-
-[node name="node_5_0 1_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Back/NearSightBack" unique_id=1064043356]
-enabled = false
-target_position = Vector3(0.4693034, 0, 2.963065)
-collision_mask = 31
-
-[node name="node_5_0 2_0" type="RayCast3D" parent="Rl/Sensor/RayCast/Back/NearSightBack" unique_id=1077910439]
-enabled = false
-target_position = Vector3(0.44100094, 1.0260605, 2.7843704)
-collision_mask = 31
-
-[node name="node_6_0 0_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Back/NearSightBack" unique_id=948196256]
-enabled = false
-target_position = Vector3(1.2798345, -1.0260605, 2.5118167)
-collision_mask = 31
-
-[node name="node_6_0 1_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Back/NearSightBack" unique_id=1440994406]
-enabled = false
-target_position = Vector3(1.3619715, 0, 2.6730196)
-collision_mask = 31
-
-[node name="node_6_0 2_0" type="RayCast3D" parent="Rl/Sensor/RayCast/Back/NearSightBack" unique_id=2003126173]
-enabled = false
-target_position = Vector3(1.2798345, 1.0260605, 2.5118167)
-collision_mask = 31
-
-[node name="node_7_0 0_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Back/NearSightBack" unique_id=1768115960]
-enabled = false
-target_position = Vector3(1.9933891, -1.0260605, 1.9933891)
-collision_mask = 31
-
-[node name="node_7_0 1_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Back/NearSightBack" unique_id=274716902]
-enabled = false
-target_position = Vector3(2.1213202, 0, 2.1213202)
-collision_mask = 31
-
-[node name="node_7_0 2_0" type="RayCast3D" parent="Rl/Sensor/RayCast/Back/NearSightBack" unique_id=664905725]
-enabled = false
-target_position = Vector3(1.9933891, 1.0260605, 1.9933891)
-collision_mask = 31
-
-[node name="node_8_0 0_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Back/NearSightBack" unique_id=1061051950]
-enabled = false
-target_position = Vector3(2.5118167, -1.0260605, 1.2798345)
-collision_mask = 31
-
-[node name="node_8_0 1_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Back/NearSightBack" unique_id=2093552467]
-enabled = false
-target_position = Vector3(2.6730196, 0, 1.3619715)
-collision_mask = 31
-
-[node name="node_8_0 2_0" type="RayCast3D" parent="Rl/Sensor/RayCast/Back/NearSightBack" unique_id=663963161]
-enabled = false
-target_position = Vector3(2.5118167, 1.0260605, 1.2798345)
-collision_mask = 31
-
-[node name="node_9_0 0_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Back/NearSightBack" unique_id=1825306773]
-enabled = false
-target_position = Vector3(2.7843704, -1.0260605, 0.44100094)
-collision_mask = 31
-
-[node name="node_9_0 1_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Back/NearSightBack" unique_id=1457838411]
-enabled = false
-target_position = Vector3(2.963065, 0, 0.4693034)
-collision_mask = 31
-
-[node name="node_9_0 2_0" type="RayCast3D" parent="Rl/Sensor/RayCast/Back/NearSightBack" unique_id=15159837]
-enabled = false
-target_position = Vector3(2.7843704, 1.0260605, 0.44100094)
-collision_mask = 31
-
-[node name="Left" type="Node" parent="Rl/Sensor/RayCast" unique_id=5048939]
-
-[node name="FarSightLeft" type="Node3D" parent="Rl/Sensor/RayCast/Left" unique_id=448890128]
-transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, -0.9, 0.5, 0.18107605)
-script = ExtResource("14_kfwlb")
-collision_mask = 31
-boolean_class_mask = 31
-n_rays_height = 3.0
-ray_length = 7.0
-cone_width = 180.0
-cone_height = 40.0
-class_sensor = true
-
-[node name="node_0_0 0_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Left/FarSightLeft" unique_id=1153179550]
-enabled = false
-target_position = Vector3(-6.579224, -1.6143111, 1.7628978)
-collision_mask = 31
-
-[node name="node_0_0 1_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Left/FarSightLeft" unique_id=2076526269]
-enabled = false
-target_position = Vector3(-6.761481, 2.1702293e-16, 1.8117334)
-collision_mask = 31
-
-[node name="node_0_0 2_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Left/FarSightLeft" unique_id=1477754732]
-enabled = false
-target_position = Vector3(-6.579224, 1.6143111, 1.7628978)
-collision_mask = 31
-
-[node name="node_1_0 0_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Left/FarSightLeft" unique_id=909254996]
-enabled = false
-target_position = Vector3(-4.8163266, -1.6143111, 4.8163266)
-collision_mask = 31
-
-[node name="node_1_0 1_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Left/FarSightLeft" unique_id=88501260]
-enabled = false
-target_position = Vector3(-4.9497476, 2.1702293e-16, 4.9497476)
-collision_mask = 31
-
-[node name="node_1_0 2_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Left/FarSightLeft" unique_id=1462633286]
-enabled = false
-target_position = Vector3(-4.8163266, 1.6143111, 4.8163266)
-collision_mask = 31
-
-[node name="node_2_0 0_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Left/FarSightLeft" unique_id=574673254]
-enabled = false
-target_position = Vector3(-1.7628978, -1.6143111, 6.579224)
-collision_mask = 31
-
-[node name="node_2_0 1_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Left/FarSightLeft" unique_id=54147240]
-enabled = false
-target_position = Vector3(-1.8117334, 2.1702293e-16, 6.761481)
-collision_mask = 31
-
-[node name="node_2_0 2_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Left/FarSightLeft" unique_id=1695828347]
-enabled = false
-target_position = Vector3(-1.7628978, 1.6143111, 6.579224)
-collision_mask = 31
-
-[node name="node_3_0 0_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Left/FarSightLeft" unique_id=2107642814]
-enabled = false
-target_position = Vector3(1.7628978, -1.6143111, 6.579224)
-collision_mask = 31
-
-[node name="node_3_0 1_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Left/FarSightLeft" unique_id=1652424227]
-enabled = false
-target_position = Vector3(1.8117334, 2.1702293e-16, 6.761481)
-collision_mask = 31
-
-[node name="node_3_0 2_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Left/FarSightLeft" unique_id=446140370]
-enabled = false
-target_position = Vector3(1.7628978, 1.6143111, 6.579224)
-collision_mask = 31
-
-[node name="node_4_0 0_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Left/FarSightLeft" unique_id=288494814]
-enabled = false
-target_position = Vector3(4.8163266, -1.6143111, 4.8163266)
-collision_mask = 31
-
-[node name="node_4_0 1_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Left/FarSightLeft" unique_id=1851484900]
-enabled = false
-target_position = Vector3(4.9497476, 2.1702293e-16, 4.9497476)
-collision_mask = 31
-
-[node name="node_4_0 2_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Left/FarSightLeft" unique_id=489000122]
-enabled = false
-target_position = Vector3(4.8163266, 1.6143111, 4.8163266)
-collision_mask = 31
-
-[node name="node_5_0 0_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Left/FarSightLeft" unique_id=1190093807]
-enabled = false
-target_position = Vector3(6.579224, -1.6143111, 1.7628978)
-collision_mask = 31
-
-[node name="node_5_0 1_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Left/FarSightLeft" unique_id=1233044424]
-enabled = false
-target_position = Vector3(6.761481, 2.1702293e-16, 1.8117334)
-collision_mask = 31
-
-[node name="node_5_0 2_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Left/FarSightLeft" unique_id=1686986464]
-enabled = false
-target_position = Vector3(6.579224, 1.6143111, 1.7628978)
-collision_mask = 31
-
-[node name="NearSightLeft" type="Node3D" parent="Rl/Sensor/RayCast/Left" unique_id=523581184]
-transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, -0.9, 0.5, 0.18107605)
-script = ExtResource("14_kfwlb")
-n_rays_width = 10.0
-n_rays_height = 3.0
-ray_length = 3.0
-cone_width = 180.0
-class_sensor = true
-
-[node name="node_0_0 0_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Left/NearSightLeft" unique_id=2115488001]
-enabled = false
-target_position = Vector3(-2.7843704, -1.0260605, 0.44100094)
-
-[node name="node_0_0 1_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Left/NearSightLeft" unique_id=22881998]
-enabled = false
-target_position = Vector3(-2.963065, 0, 0.4693034)
-
-[node name="node_0_0 2_0" type="RayCast3D" parent="Rl/Sensor/RayCast/Left/NearSightLeft" unique_id=856707795]
-enabled = false
-target_position = Vector3(-2.7843704, 1.0260605, 0.44100094)
-
-[node name="node_1_0 0_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Left/NearSightLeft" unique_id=45879094]
-enabled = false
-target_position = Vector3(-2.5118167, -1.0260605, 1.2798345)
-
-[node name="node_1_0 1_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Left/NearSightLeft" unique_id=2100554205]
-enabled = false
-target_position = Vector3(-2.6730196, 0, 1.3619715)
-
-[node name="node_1_0 2_0" type="RayCast3D" parent="Rl/Sensor/RayCast/Left/NearSightLeft" unique_id=285014337]
-enabled = false
-target_position = Vector3(-2.5118167, 1.0260605, 1.2798345)
-
-[node name="node_2_0 0_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Left/NearSightLeft" unique_id=21732745]
-enabled = false
-target_position = Vector3(-1.9933891, -1.0260605, 1.9933891)
-
-[node name="node_2_0 1_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Left/NearSightLeft" unique_id=81263185]
-enabled = false
-target_position = Vector3(-2.1213202, 0, 2.1213202)
-
-[node name="node_2_0 2_0" type="RayCast3D" parent="Rl/Sensor/RayCast/Left/NearSightLeft" unique_id=1716517274]
-enabled = false
-target_position = Vector3(-1.9933891, 1.0260605, 1.9933891)
-
-[node name="node_3_0 0_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Left/NearSightLeft" unique_id=504240681]
-enabled = false
-target_position = Vector3(-1.2798345, -1.0260605, 2.5118167)
-
-[node name="node_3_0 1_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Left/NearSightLeft" unique_id=912026671]
-enabled = false
-target_position = Vector3(-1.3619715, 0, 2.6730196)
-
-[node name="node_3_0 2_0" type="RayCast3D" parent="Rl/Sensor/RayCast/Left/NearSightLeft" unique_id=505950934]
-enabled = false
-target_position = Vector3(-1.2798345, 1.0260605, 2.5118167)
-
-[node name="node_4_0 0_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Left/NearSightLeft" unique_id=2127561578]
-enabled = false
-target_position = Vector3(-0.44100094, -1.0260605, 2.7843704)
-
-[node name="node_4_0 1_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Left/NearSightLeft" unique_id=1903242456]
-enabled = false
-target_position = Vector3(-0.4693034, 0, 2.963065)
-
-[node name="node_4_0 2_0" type="RayCast3D" parent="Rl/Sensor/RayCast/Left/NearSightLeft" unique_id=1352050775]
-enabled = false
-target_position = Vector3(-0.44100094, 1.0260605, 2.7843704)
-
-[node name="node_5_0 0_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Left/NearSightLeft" unique_id=1070276771]
-enabled = false
-target_position = Vector3(0.44100094, -1.0260605, 2.7843704)
-
-[node name="node_5_0 1_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Left/NearSightLeft" unique_id=426737966]
-enabled = false
-target_position = Vector3(0.4693034, 0, 2.963065)
-
-[node name="node_5_0 2_0" type="RayCast3D" parent="Rl/Sensor/RayCast/Left/NearSightLeft" unique_id=1351072722]
-enabled = false
-target_position = Vector3(0.44100094, 1.0260605, 2.7843704)
-
-[node name="node_6_0 0_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Left/NearSightLeft" unique_id=534815856]
-enabled = false
-target_position = Vector3(1.2798345, -1.0260605, 2.5118167)
-
-[node name="node_6_0 1_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Left/NearSightLeft" unique_id=1015859300]
-enabled = false
-target_position = Vector3(1.3619715, 0, 2.6730196)
-
-[node name="node_6_0 2_0" type="RayCast3D" parent="Rl/Sensor/RayCast/Left/NearSightLeft" unique_id=526308877]
-enabled = false
-target_position = Vector3(1.2798345, 1.0260605, 2.5118167)
-
-[node name="node_7_0 0_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Left/NearSightLeft" unique_id=966358774]
-enabled = false
-target_position = Vector3(1.9933891, -1.0260605, 1.9933891)
-
-[node name="node_7_0 1_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Left/NearSightLeft" unique_id=1402793149]
-enabled = false
-target_position = Vector3(2.1213202, 0, 2.1213202)
-
-[node name="node_7_0 2_0" type="RayCast3D" parent="Rl/Sensor/RayCast/Left/NearSightLeft" unique_id=526639766]
-enabled = false
-target_position = Vector3(1.9933891, 1.0260605, 1.9933891)
-
-[node name="node_8_0 0_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Left/NearSightLeft" unique_id=1121530876]
-enabled = false
-target_position = Vector3(2.5118167, -1.0260605, 1.2798345)
-
-[node name="node_8_0 1_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Left/NearSightLeft" unique_id=633162831]
-enabled = false
-target_position = Vector3(2.6730196, 0, 1.3619715)
-
-[node name="node_8_0 2_0" type="RayCast3D" parent="Rl/Sensor/RayCast/Left/NearSightLeft" unique_id=1629625747]
-enabled = false
-target_position = Vector3(2.5118167, 1.0260605, 1.2798345)
-
-[node name="node_9_0 0_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Left/NearSightLeft" unique_id=1402219345]
-enabled = false
-target_position = Vector3(2.7843704, -1.0260605, 0.44100094)
-
-[node name="node_9_0 1_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Left/NearSightLeft" unique_id=1461596035]
-enabled = false
-target_position = Vector3(2.963065, 0, 0.4693034)
-
-[node name="node_9_0 2_0" type="RayCast3D" parent="Rl/Sensor/RayCast/Left/NearSightLeft" unique_id=439370321]
-enabled = false
-target_position = Vector3(2.7843704, 1.0260605, 0.44100094)
-
-[node name="Right" type="Node" parent="Rl/Sensor/RayCast" unique_id=1713486360]
-
-[node name="FarSightRight" type="Node3D" parent="Rl/Sensor/RayCast/Right" unique_id=1209446509]
-transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 0.9, 0.5, 0.181)
-script = ExtResource("14_kfwlb")
-collision_mask = 31
-boolean_class_mask = 31
-n_rays_height = 3.0
-ray_length = 7.0
-cone_width = 180.0
-cone_height = 40.0
-class_sensor = true
-
-[node name="node_0_0 0_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Right/FarSightRight" unique_id=1350104859]
-enabled = false
-target_position = Vector3(-6.579224, -1.6143111, 1.7628978)
-collision_mask = 31
-
-[node name="node_0_0 1_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Right/FarSightRight" unique_id=906834597]
-enabled = false
-target_position = Vector3(-6.761481, 2.1702293e-16, 1.8117334)
-collision_mask = 31
-
-[node name="node_0_0 2_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Right/FarSightRight" unique_id=879984852]
-enabled = false
-target_position = Vector3(-6.579224, 1.6143111, 1.7628978)
-collision_mask = 31
-
-[node name="node_1_0 0_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Right/FarSightRight" unique_id=1216610005]
-enabled = false
-target_position = Vector3(-4.8163266, -1.6143111, 4.8163266)
-collision_mask = 31
-
-[node name="node_1_0 1_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Right/FarSightRight" unique_id=1793314492]
-enabled = false
-target_position = Vector3(-4.9497476, 2.1702293e-16, 4.9497476)
-collision_mask = 31
-
-[node name="node_1_0 2_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Right/FarSightRight" unique_id=761048915]
-enabled = false
-target_position = Vector3(-4.8163266, 1.6143111, 4.8163266)
-collision_mask = 31
-
-[node name="node_2_0 0_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Right/FarSightRight" unique_id=72726637]
-enabled = false
-target_position = Vector3(-1.7628978, -1.6143111, 6.579224)
-collision_mask = 31
-
-[node name="node_2_0 1_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Right/FarSightRight" unique_id=1423331424]
-enabled = false
-target_position = Vector3(-1.8117334, 2.1702293e-16, 6.761481)
-collision_mask = 31
-
-[node name="node_2_0 2_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Right/FarSightRight" unique_id=2130659116]
-enabled = false
-target_position = Vector3(-1.7628978, 1.6143111, 6.579224)
-collision_mask = 31
-
-[node name="node_3_0 0_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Right/FarSightRight" unique_id=1617474132]
-enabled = false
-target_position = Vector3(1.7628978, -1.6143111, 6.579224)
-collision_mask = 31
-
-[node name="node_3_0 1_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Right/FarSightRight" unique_id=549027354]
-enabled = false
-target_position = Vector3(1.8117334, 2.1702293e-16, 6.761481)
-collision_mask = 31
-
-[node name="node_3_0 2_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Right/FarSightRight" unique_id=625540349]
-enabled = false
-target_position = Vector3(1.7628978, 1.6143111, 6.579224)
-collision_mask = 31
-
-[node name="node_4_0 0_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Right/FarSightRight" unique_id=2074610834]
-enabled = false
-target_position = Vector3(4.8163266, -1.6143111, 4.8163266)
-collision_mask = 31
-
-[node name="node_4_0 1_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Right/FarSightRight" unique_id=1743900134]
-enabled = false
-target_position = Vector3(4.9497476, 2.1702293e-16, 4.9497476)
-collision_mask = 31
-
-[node name="node_4_0 2_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Right/FarSightRight" unique_id=1175843779]
-enabled = false
-target_position = Vector3(4.8163266, 1.6143111, 4.8163266)
-collision_mask = 31
-
-[node name="node_5_0 0_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Right/FarSightRight" unique_id=1907703163]
-enabled = false
-target_position = Vector3(6.579224, -1.6143111, 1.7628978)
-collision_mask = 31
-
-[node name="node_5_0 1_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Right/FarSightRight" unique_id=728114484]
-enabled = false
-target_position = Vector3(6.761481, 2.1702293e-16, 1.8117334)
-collision_mask = 31
-
-[node name="node_5_0 2_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Right/FarSightRight" unique_id=913962866]
-enabled = false
-target_position = Vector3(6.579224, 1.6143111, 1.7628978)
-collision_mask = 31
-
-[node name="NearSightRight" type="Node3D" parent="Rl/Sensor/RayCast/Right" unique_id=1613089884]
-transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 0.9, 0.5, 0.181)
-script = ExtResource("14_kfwlb")
-collision_mask = 31
-boolean_class_mask = 31
-n_rays_width = 10.0
-n_rays_height = 3.0
-ray_length = 3.0
-cone_width = 180.0
-class_sensor = true
-
-[node name="node_0_0 0_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Right/NearSightRight" unique_id=1597485669]
-enabled = false
-target_position = Vector3(-2.7843704, -1.0260605, 0.44100094)
-collision_mask = 31
-
-[node name="node_0_0 1_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Right/NearSightRight" unique_id=164828029]
-enabled = false
-target_position = Vector3(-2.963065, 0, 0.4693034)
-collision_mask = 31
-
-[node name="node_0_0 2_0" type="RayCast3D" parent="Rl/Sensor/RayCast/Right/NearSightRight" unique_id=1280499128]
-enabled = false
-target_position = Vector3(-2.7843704, 1.0260605, 0.44100094)
-collision_mask = 31
-
-[node name="node_1_0 0_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Right/NearSightRight" unique_id=971627116]
-enabled = false
-target_position = Vector3(-2.5118167, -1.0260605, 1.2798345)
-collision_mask = 31
-
-[node name="node_1_0 1_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Right/NearSightRight" unique_id=2063136494]
-enabled = false
-target_position = Vector3(-2.6730196, 0, 1.3619715)
-collision_mask = 31
-
-[node name="node_1_0 2_0" type="RayCast3D" parent="Rl/Sensor/RayCast/Right/NearSightRight" unique_id=387795286]
-enabled = false
-target_position = Vector3(-2.5118167, 1.0260605, 1.2798345)
-collision_mask = 31
-
-[node name="node_2_0 0_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Right/NearSightRight" unique_id=479214354]
-enabled = false
-target_position = Vector3(-1.9933891, -1.0260605, 1.9933891)
-collision_mask = 31
-
-[node name="node_2_0 1_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Right/NearSightRight" unique_id=622689619]
-enabled = false
-target_position = Vector3(-2.1213202, 0, 2.1213202)
-collision_mask = 31
-
-[node name="node_2_0 2_0" type="RayCast3D" parent="Rl/Sensor/RayCast/Right/NearSightRight" unique_id=435409400]
-enabled = false
-target_position = Vector3(-1.9933891, 1.0260605, 1.9933891)
-collision_mask = 31
-
-[node name="node_3_0 0_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Right/NearSightRight" unique_id=935286662]
-enabled = false
-target_position = Vector3(-1.2798345, -1.0260605, 2.5118167)
-collision_mask = 31
-
-[node name="node_3_0 1_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Right/NearSightRight" unique_id=1981718599]
-enabled = false
-target_position = Vector3(-1.3619715, 0, 2.6730196)
-collision_mask = 31
-
-[node name="node_3_0 2_0" type="RayCast3D" parent="Rl/Sensor/RayCast/Right/NearSightRight" unique_id=1365708950]
-enabled = false
-target_position = Vector3(-1.2798345, 1.0260605, 2.5118167)
-collision_mask = 31
-
-[node name="node_4_0 0_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Right/NearSightRight" unique_id=289699416]
-enabled = false
-target_position = Vector3(-0.44100094, -1.0260605, 2.7843704)
-collision_mask = 31
-
-[node name="node_4_0 1_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Right/NearSightRight" unique_id=1813524294]
-enabled = false
-target_position = Vector3(-0.4693034, 0, 2.963065)
-collision_mask = 31
-
-[node name="node_4_0 2_0" type="RayCast3D" parent="Rl/Sensor/RayCast/Right/NearSightRight" unique_id=440982662]
-enabled = false
-target_position = Vector3(-0.44100094, 1.0260605, 2.7843704)
-collision_mask = 31
-
-[node name="node_5_0 0_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Right/NearSightRight" unique_id=1533238554]
-enabled = false
-target_position = Vector3(0.44100094, -1.0260605, 2.7843704)
-collision_mask = 31
-
-[node name="node_5_0 1_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Right/NearSightRight" unique_id=1713373139]
-enabled = false
-target_position = Vector3(0.4693034, 0, 2.963065)
-collision_mask = 31
-
-[node name="node_5_0 2_0" type="RayCast3D" parent="Rl/Sensor/RayCast/Right/NearSightRight" unique_id=1917221105]
-enabled = false
-target_position = Vector3(0.44100094, 1.0260605, 2.7843704)
-collision_mask = 31
-
-[node name="node_6_0 0_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Right/NearSightRight" unique_id=1901747224]
-enabled = false
-target_position = Vector3(1.2798345, -1.0260605, 2.5118167)
-collision_mask = 31
-
-[node name="node_6_0 1_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Right/NearSightRight" unique_id=1274125081]
-enabled = false
-target_position = Vector3(1.3619715, 0, 2.6730196)
-collision_mask = 31
-
-[node name="node_6_0 2_0" type="RayCast3D" parent="Rl/Sensor/RayCast/Right/NearSightRight" unique_id=1079252658]
-enabled = false
-target_position = Vector3(1.2798345, 1.0260605, 2.5118167)
-collision_mask = 31
-
-[node name="node_7_0 0_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Right/NearSightRight" unique_id=2048083312]
-enabled = false
-target_position = Vector3(1.9933891, -1.0260605, 1.9933891)
-collision_mask = 31
-
-[node name="node_7_0 1_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Right/NearSightRight" unique_id=2022100687]
-enabled = false
-target_position = Vector3(2.1213202, 0, 2.1213202)
-collision_mask = 31
-
-[node name="node_7_0 2_0" type="RayCast3D" parent="Rl/Sensor/RayCast/Right/NearSightRight" unique_id=1192644491]
-enabled = false
-target_position = Vector3(1.9933891, 1.0260605, 1.9933891)
-collision_mask = 31
-
-[node name="node_8_0 0_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Right/NearSightRight" unique_id=350147491]
-enabled = false
-target_position = Vector3(2.5118167, -1.0260605, 1.2798345)
-collision_mask = 31
-
-[node name="node_8_0 1_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Right/NearSightRight" unique_id=1067174594]
-enabled = false
-target_position = Vector3(2.6730196, 0, 1.3619715)
-collision_mask = 31
-
-[node name="node_8_0 2_0" type="RayCast3D" parent="Rl/Sensor/RayCast/Right/NearSightRight" unique_id=1856827013]
-enabled = false
-target_position = Vector3(2.5118167, 1.0260605, 1.2798345)
-collision_mask = 31
-
-[node name="node_9_0 0_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Right/NearSightRight" unique_id=1632164381]
-enabled = false
-target_position = Vector3(2.7843704, -1.0260605, 0.44100094)
-collision_mask = 31
-
-[node name="node_9_0 1_1" type="RayCast3D" parent="Rl/Sensor/RayCast/Right/NearSightRight" unique_id=1440500816]
-enabled = false
-target_position = Vector3(2.963065, 0, 0.4693034)
-collision_mask = 31
-
-[node name="node_9_0 2_0" type="RayCast3D" parent="Rl/Sensor/RayCast/Right/NearSightRight" unique_id=1422607803]
-enabled = false
-target_position = Vector3(2.7843704, 1.0260605, 0.44100094)
-collision_mask = 31
-
-[node name="Position" type="Node" parent="Rl/Sensor" unique_id=1586058628]
-
-[node name="Reward" type="Node" parent="Rl" unique_id=775251591]
-script = ExtResource("17_3oqn0")
+[connection signal="carrying_changed" from="TaxiService" to="MMT_Visual_Nodes/PlateSwitch" method="_set_plate"]
 
 [editable path="MMT_Visual_Nodes/santana_body"]

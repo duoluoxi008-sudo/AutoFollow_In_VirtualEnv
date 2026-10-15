@@ -2,5 +2,16 @@
 
 [ext_resource type="Script" uid="uid://eytex4xxespw" path="res://Passenger/PassengerSpawner.gd" id="1_1e00f"]
 
-[node name="PassengerSpawner" type="Marker3D" unique_id=508315875]
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_6jk8d"]
+vertex_color_use_as_albedo = true
+albedo_color = Color(0.92666674, 1, 0.120000005, 1)
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_ek7y0"]
+
+[node name="PassengerSpawner" type="Marker3D" unique_id=508315875 groups=["passenger_spawners"]]
 script = ExtResource("1_1e00f")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=553945417]
+transform = Transform3D(0.4, 0, 0, 0, 0.4, 0, 0, 0, 0.4, 0, 0, 0)
+material_override = SubResource("StandardMaterial3D_6jk8d")
+mesh = SubResource("PlaneMesh_ek7y0")

@@ -1,0 +1,32 @@
+[gd_scene format=3 uid="uid://dveg8kitdkt6c"]
+
+[ext_resource type="Script" uid="uid://clh3p4osx4i55" path="res://misc/free_fly_camera.gd" id="1_srwt3"]
+[ext_resource type="Script" uid="uid://dgty4hy4npql1" path="res://vehicle/AI/sync_taxi.gd" id="2_2vpmy"]
+[ext_resource type="PackedScene" uid="uid://dffh46qytpr4u" path="res://levels/TrainingArena.tscn" id="3_sjvgy"]
+
+[node name="ParaTrainScene" type="Node3D" unique_id=81719576]
+
+[node name="FreeFlyCamera" type="Camera3D" parent="." unique_id=1090731678]
+transform = Transform3D(0.79600203, 0.26296708, -0.5451872, 0, 0.90069824, 0.43444526, 0.6052939, -0.34581932, 0.7169576, -21.606232, 16.423355, 39.03188)
+current = true
+script = ExtResource("1_srwt3")
+metadata/_custom_type_script = "uid://clh3p4osx4i55"
+
+[node name="TaxiSync" type="Node" parent="." unique_id=1214383275]
+script = ExtResource("2_2vpmy")
+speed_up = 8.0
+
+[node name="OmniLight3D" type="OmniLight3D" parent="." unique_id=69770019]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 274.6703, 239.59625, 0)
+light_energy = 13.301
+omni_range = 1193.866
+omni_attenuation = 0.698
+
+[node name="TrainScene" parent="." unique_id=503998264 instance=ExtResource("3_sjvgy")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7.615, 0, 0)
+
+[node name="TrainScene2" parent="." unique_id=139660622 instance=ExtResource("3_sjvgy")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 261.1945, 0, 0)
+
+[node name="TrainScene3" parent="." unique_id=1650009405 instance=ExtResource("3_sjvgy")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 546.9341, 0, 0)

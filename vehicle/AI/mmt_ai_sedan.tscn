@@ -1,0 +1,1481 @@
+[gd_scene format=3 uid="uid://cwcowjlfvc42a"]
+
+[ext_resource type="Script" uid="uid://dvj3nxiibt1gf" path="res://vehicle/mmt_sedan.gd" id="1_70ekg"]
+[ext_resource type="Script" uid="uid://2c1j0nwkn6oy" path="res://vehicle/mmt_wheel_component.gd" id="2_jh4oa"]
+[ext_resource type="Script" uid="uid://dlgxwpy05m780" path="res://vehicle/mmt_engine_component.gd" id="3_lqxpg"]
+[ext_resource type="Curve" uid="uid://bl0e8y6sxp8wl" path="res://vehicle/sedan_santana_torque_curve.tres" id="4_aqn5r"]
+[ext_resource type="Resource" path="res://vehicle/engine_spec_santana.tres" id="26_engspec"]
+[ext_resource type="Script" uid="uid://c4y4ui8rjck22" path="res://vehicle/mmt_gearbox_component.gd" id="5_2efox"]
+[ext_resource type="Script" uid="uid://cjr6ntoyfc8ck" path="res://vehicle/mmt_differential_component.gd" id="6_a2cbm"]
+[ext_resource type="Script" uid="uid://dxfjhm518lvdy" path="res://vehicle/mmt_input_filter_component.gd" id="7_s2fgk"]
+[ext_resource type="Script" uid="uid://b4u4udeyygg6u" path="res://vehicle/mmt_tcs_component.gd" id="8_fprvm"]
+[ext_resource type="Script" uid="uid://dembvnti5442q" path="res://vehicle/mmt_steering_component.gd" id="9_iu3u3"]
+[ext_resource type="Script" uid="uid://d3n0tpnw4446d" path="res://vehicle/mmt_anti_roll_bar.gd" id="10_i6isb"]
+[ext_resource type="PackedScene" uid="uid://ch8tdjb2733yt" path="res://vehicle/visuals/santana/santana_body.glb" id="11_c7jod"]
+[ext_resource type="Script" uid="uid://drf1bew7jyodo" path="res://vehicle/visuals/mmt_wheel_visualizer.gd" id="12_6tc34"]
+[ext_resource type="Script" uid="uid://bbhjgrnyq7wux" path="res://vehicle/visuals/santana/PlateSwitch.gd" id="13_aqn5r"]
+[ext_resource type="Script" uid="uid://dw0o06d00ba3" path="res://vehicle/AI/AITaxiContorller.gd" id="13_oprov"]
+[ext_resource type="Script" uid="uid://bd7b3tdcb7ay4" path="res://vehicle/AI/SensorManager.gd" id="14_1wbye"]
+[ext_resource type="PackedScene" uid="uid://c0oa15ovhjrf6" path="res://vehicle/visuals/santana/TaxiPlateGreen.glb" id="14_2efox"]
+[ext_resource type="PackedScene" uid="uid://d1m8osycvwfhl" path="res://vehicle/visuals/santana/TaxiPlateRed.glb" id="15_a2cbm"]
+[ext_resource type="Script" uid="uid://c4ua1fuhwjh87" path="res://addons/godot_rl_agents/sensors/sensors_3d/RaycastSensor3D.gd" id="15_s3x73"]
+[ext_resource type="Script" uid="uid://dw5b50ecp081t" path="res://vehicle/AI/PassengerPositionSensor3D.gd" id="16_ires5"]
+[ext_resource type="Script" uid="uid://bucxucpvi017r" path="res://vehicle/AI/RivalPositionSensor.gd" id="17_bhoe8"]
+[ext_resource type="Script" uid="uid://bweny06faf2b4" path="res://vehicle/AI/Reward/RewardManager.gd" id="18_d2cr6"]
+[ext_resource type="Script" uid="uid://csfgeoaq4h2g1" path="res://vehicle/AI/Reward/PickUpAndDropRewardFunction.gd" id="19_k1pfa"]
+[ext_resource type="Script" uid="uid://cv5ic6ba8duew" path="res://vehicle/taxi/TaxiServiceComponent.gd" id="20_taxisvc"]
+[ext_resource type="Script" uid="uid://bc0q3uwojqa37" path="res://vehicle/taxi/VehicleStateResetter.gd" id="21_taxirst"]
+[ext_resource type="Script" uid="uid://bfp75cxdj1qn3" path="res://vehicle/AI/Reward/isMovingRewardFunction.gd" id="22_fprvm"]
+[ext_resource type="Script" uid="uid://bj71statuu587" path="res://vehicle/AI/Reward/DenseNavigationReward.gd" id="23_s2fgk"]
+[ext_resource type="Script" uid="uid://cui6yotkw6wh3" path="res://vehicle/AI/Reward/SteeringSmoothnessReward.gd" id="24_smooth"]
+[ext_resource type="Script" uid="uid://bm364c0ap5di3" path="res://vehicle/AI/Reward/WallContactReward.gd" id="25_wall"]
+
+[sub_resource type="PhysicsMaterial" id="PhysicsMaterial_71kbo"]
+
+[sub_resource type="ConvexPolygonShape3D" id="ConvexPolygonShape3D_7nokl"]
+points = PackedVector3Array(-0.8706, 0.42644346, -2.2007437, 0.7852074, 0.8447667, 2.213197, -0.5566431, 1.4349723, -1.0202812, 0.9058444, 0.98735505, -2.2935538, -0.7783108, 0.3038194, 2.123396, 0.8267945, 0.3162, -1.8262429, -0.83428216, 0.98735505, 2.056695, 0.543188, 1.4225252, 0.02670002, 0.7772561, 0.3038527, 2.1232746, -0.906854, 0.98735505, -2.2935538, -0.8278041, 0.3162, -1.8262429, 0.8332726, 0.98735505, 2.056695, -0.6130072, 1.3623217, 0.4778754, 0.55563354, 1.4349723, -1.0202812, 0.8706, 0.4259186, -2.2033281, 0.8332726, 1.0599908, -2.2935538, -0.8006281, 0.5657908, 2.2533007, 0.84082294, 0.50859904, 2.1130345, -0.84086907, 0.50902295, 2.1106455, 0.6119976, 1.3623217, 0.4778754, -0.83428216, 1.0599908, -2.2935538, 0.79993045, 0.5656688, 2.2541687, 0.8393831, 0.30763972, 1.0344076, -0.8394397, 0.30828777, 1.0332642, -0.54419756, 1.4225252, 0.02670002, -0.7855695, 0.8447947, 2.211395, -0.6753063, 1.2965554, 0.3480377, 0.6735659, 1.2961029, 0.28333083, -0.84793663, 0.370311, -2.0747716, 0.62582207, 1.3732358, -1.1599457, -0.62607354, 1.3726373, -1.1585095, 0.84692705, 0.370311, -2.0747716)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_qcqm5"]
+albedo_color = Color(0.5324254, 0.1825436, 0.16864067, 1)
+metallic = 0.18
+metallic_specular = 0.56
+roughness = 0.28
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_64qgb"]
+noise_type = 3
+frequency = 0.96
+
+[sub_resource type="NoiseTexture2D" id="NoiseTexture2D_64qgb"]
+noise = SubResource("FastNoiseLite_64qgb")
+as_normal_map = true
+bump_strength = 0.5
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_71kbo"]
+noise_type = 3
+frequency = 0.2948
+
+[sub_resource type="NoiseTexture2D" id="NoiseTexture2D_kfwlb"]
+noise = SubResource("FastNoiseLite_71kbo")
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_71kbo"]
+albedo_color = Color(0, 0, 0, 1)
+metallic_specular = 0.63
+roughness_texture = SubResource("NoiseTexture2D_kfwlb")
+normal_enabled = true
+normal_texture = SubResource("NoiseTexture2D_64qgb")
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_2hqnl"]
+material = SubResource("StandardMaterial3D_71kbo")
+top_radius = 0.28
+bottom_radius = 0.28
+height = 0.185
+
+[sub_resource type="Gradient" id="Gradient_64qgb"]
+colors = PackedColorArray(0.5027185, 0.50271857, 0.5027184, 1, 1, 1, 1, 1)
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_kfwlb"]
+noise_type = 3
+seed = 15
+frequency = 0.0151
+domain_warp_type = 1
+
+[sub_resource type="NoiseTexture2D" id="NoiseTexture2D_3236b"]
+noise = SubResource("FastNoiseLite_kfwlb")
+color_ramp = SubResource("Gradient_64qgb")
+normalize = false
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_64qgb"]
+albedo_color = Color(0.6858353, 0.68583524, 0.6858352, 1)
+metallic = 1.0
+metallic_specular = 0.0
+roughness = 0.36
+roughness_texture = SubResource("NoiseTexture2D_3236b")
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_qcqm5"]
+material = SubResource("StandardMaterial3D_64qgb")
+top_radius = 0.18
+bottom_radius = 0.18
+height = 0.185
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_qx5fr"]
+albedo_color = Color(0.97586995, 0, 0.399885, 1)
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_7nokl"]
+material = SubResource("StandardMaterial3D_qx5fr")
+top_radius = 0.03
+bottom_radius = 0.03
+height = 0.121
+
+[node name="MMTSedan" type="RigidBody3D" unique_id=1500364419 node_paths=PackedStringArray("engine", "gearbox", "input_filter", "tcs", "steering", "wheel_fl", "wheel_fr", "wheel_rl", "wheel_rr")]
+collision_layer = 16
+collision_mask = 31
+mass = 1210.0
+physics_material_override = SubResource("PhysicsMaterial_71kbo")
+center_of_mass_mode = 1
+center_of_mass = Vector3(0, 0.3, -0.35)
+inertia = Vector3(1800, 2200, 600)
+contact_monitor = true
+max_contacts_reported = 8
+script = ExtResource("1_70ekg")
+engine = NodePath("MMT_Physics_Nodes/Drivetrain/Engine")
+gearbox = NodePath("MMT_Physics_Nodes/Drivetrain/Gearbox")
+input_filter = NodePath("MMT_Physics_Nodes/Drivetrain/InputFilter")
+tcs = NodePath("MMT_Physics_Nodes/Drivetrain/TCS")
+steering = NodePath("MMT_Physics_Nodes/Drivetrain/Steering")
+wheel_fl = NodePath("MMT_Physics_Nodes/Wheels/Wheel_FL")
+wheel_fr = NodePath("MMT_Physics_Nodes/Wheels/Wheel_FR")
+wheel_rl = NodePath("MMT_Physics_Nodes/Wheels/Wheel_RL")
+wheel_rr = NodePath("MMT_Physics_Nodes/Wheels/Wheel_RR")
+metadata/_custom_type_script = "uid://dvj3nxiibt1gf"
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1630716000]
+transform = Transform3D(-0.9769302, 0, -8.540596e-08, 0, 0.9769302, 0, 8.540596e-08, 0, -0.9769302, 0, -0.2830629, 0.04813534)
+shape = SubResource("ConvexPolygonShape3D_7nokl")
+
+[node name="MMT_Physics_Nodes" type="Node3D" parent="." unique_id=945850069]
+
+[node name="Wheels" type="Node3D" parent="MMT_Physics_Nodes" unique_id=1160038998]
+
+[node name="Wheel_FL" type="Marker3D" parent="MMT_Physics_Nodes/Wheels" unique_id=271730484]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.71, 0.35, -1.3)
+script = ExtResource("2_jh4oa")
+long_ray_count = 6
+spring_stiffness = 25000.0
+tire_lat_stiffness = 140000.0
+tire_long_stiffness = 150000.0
+relaxation_length = 0.1
+is_driven = true
+ground_collision_mask = 31
+metadata/_custom_type_script = "uid://2c1j0nwkn6oy"
+
+[node name="Wheel_FR" type="Marker3D" parent="MMT_Physics_Nodes/Wheels" unique_id=429511061]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.71, 0.35, -1.3)
+script = ExtResource("2_jh4oa")
+long_ray_count = 6
+spring_stiffness = 25000.0
+tire_lat_stiffness = 140000.0
+tire_long_stiffness = 150000.0
+relaxation_length = 0.1
+is_driven = true
+ground_collision_mask = 31
+metadata/_custom_type_script = "uid://2c1j0nwkn6oy"
+
+[node name="Wheel_RL" type="Marker3D" parent="MMT_Physics_Nodes/Wheels" unique_id=1244555301]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.71, 0.35, 1.3)
+script = ExtResource("2_jh4oa")
+long_ray_count = 6
+spring_stiffness = 18000.0
+damping = 1500.0
+tire_lat_stiffness = 140000.0
+tire_long_stiffness = 150000.0
+relaxation_length = 0.1
+ground_collision_mask = 31
+wheel_inertia = 1.0
+metadata/_custom_type_script = "uid://2c1j0nwkn6oy"
+
+[node name="Wheel_RR" type="Marker3D" parent="MMT_Physics_Nodes/Wheels" unique_id=350405403]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.71, 0.35, 1.3)
+script = ExtResource("2_jh4oa")
+long_ray_count = 6
+spring_stiffness = 18000.0
+damping = 1500.0
+tire_lat_stiffness = 140000.0
+tire_long_stiffness = 150000.0
+relaxation_length = 0.1
+ground_collision_mask = 31
+wheel_inertia = 1.0
+metadata/_custom_type_script = "uid://2c1j0nwkn6oy"
+
+[node name="Drivetrain" type="Node3D" parent="MMT_Physics_Nodes" unique_id=2091670043]
+
+[node name="Engine" type="Node" parent="MMT_Physics_Nodes/Drivetrain" unique_id=71000842 node_paths=PackedStringArray("output_node")]
+script = ExtResource("3_lqxpg")
+output_node = NodePath("../Gearbox")
+spec = ExtResource("26_engspec")
+
+[node name="Gearbox" type="Node" parent="MMT_Physics_Nodes/Drivetrain" unique_id=1184206002 node_paths=PackedStringArray("output_node")]
+script = ExtResource("5_2efox")
+output_node = NodePath("../DiffFront")
+use_fluid_coupling = true
+shift_up_rpm = 3200.0
+shift_down_rpm = 1400.0
+shift_duration = 0.3
+kickdown_up_rpm = 5600.0
+kickdown_down_rpm = 2800.0
+enable_heavy_load_logic = true
+shift_cooldown = 0.3
+
+[node name="DiffFront" type="Node" parent="MMT_Physics_Nodes/Drivetrain" unique_id=531807157 node_paths=PackedStringArray("output_left", "output_right")]
+script = ExtResource("6_a2cbm")
+output_left = NodePath("../../Wheels/Wheel_FL")
+output_right = NodePath("../../Wheels/Wheel_FR")
+is_driven = null
+limited_slip_factor = null
+
+[node name="InputFilter" type="Node" parent="MMT_Physics_Nodes/Drivetrain" unique_id=1247916436]
+script = ExtResource("7_s2fgk")
+
+[node name="TCS" type="Node" parent="MMT_Physics_Nodes/Drivetrain" unique_id=142286218 node_paths=PackedStringArray("input_filter", "driven_wheels")]
+script = ExtResource("8_fprvm")
+input_filter = NodePath("../InputFilter")
+driven_wheels = [NodePath("../../Wheels/Wheel_FL"), NodePath("../../Wheels/Wheel_FR")]
+
+[node name="Steering" type="Node" parent="MMT_Physics_Nodes/Drivetrain" unique_id=828559853]
+script = ExtResource("9_iu3u3")
+steer_rate_deg_s = 90.0
+speed_sensitivity = 0.045
+
+[node name="SuspensionLinks" type="Node3D" parent="MMT_Physics_Nodes" unique_id=225047093]
+
+[node name="ARB_Front" type="Marker3D" parent="MMT_Physics_Nodes/SuspensionLinks" unique_id=635003764 node_paths=PackedStringArray("left_wheel", "right_wheel")]
+script = ExtResource("10_i6isb")
+left_wheel = NodePath("../../Wheels/Wheel_FL")
+right_wheel = NodePath("../../Wheels/Wheel_FR")
+stiffness = 18000.0
+metadata/_custom_type_script = "uid://d3n0tpnw4446d"
+
+[node name="ARB_Rear" type="Marker3D" parent="MMT_Physics_Nodes/SuspensionLinks" unique_id=343145199 node_paths=PackedStringArray("left_wheel", "right_wheel")]
+script = ExtResource("10_i6isb")
+left_wheel = NodePath("../../Wheels/Wheel_RL")
+right_wheel = NodePath("../../Wheels/Wheel_RR")
+stiffness = 12000.0
+metadata/_custom_type_script = "uid://d3n0tpnw4446d"
+
+[node name="MMT_Visual_Nodes" type="Node3D" parent="." unique_id=256695506]
+
+[node name="santana_body" parent="MMT_Visual_Nodes" unique_id=108788462 instance=ExtResource("11_c7jod")]
+transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 0, 0, 0)
+
+[node name="Cube" parent="MMT_Visual_Nodes/santana_body" index="0" unique_id=2032674641]
+transform = Transform3D(0.9769302, 0, 7.1054274e-15, 0, 0.9769302, 0, -7.1054274e-15, 0, 0.9769302, 4.208125e-09, -0.2830629, -0.04813534)
+surface_material_override/0 = SubResource("StandardMaterial3D_qcqm5")
+
+[node name="WheelVis_FL" type="Node3D" parent="MMT_Visual_Nodes" unique_id=1935708196 node_paths=PackedStringArray("physics_wheel", "hub_node", "wheel_mesh")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.71, 0.35, -1.3)
+script = ExtResource("12_6tc34")
+physics_wheel = NodePath("../../MMT_Physics_Nodes/Wheels/Wheel_FL")
+hub_node = NodePath("Hub")
+wheel_mesh = NodePath("Hub/Wheel_Mesh")
+reverse_spin_direction = true
+
+[node name="Hub" type="Node3D" parent="MMT_Visual_Nodes/WheelVis_FL" unique_id=1153171987]
+
+[node name="Wheel_Mesh" type="MeshInstance3D" parent="MMT_Visual_Nodes/WheelVis_FL/Hub" unique_id=494372429]
+transform = Transform3D(-4.371139e-08, -1, 0, 1, -4.371139e-08, 0, 0, 0, 1, 0, 0, 0)
+mesh = SubResource("CylinderMesh_2hqnl")
+skeleton = NodePath("../../..")
+
+[node name="Wheel_Mesh2" type="MeshInstance3D" parent="MMT_Visual_Nodes/WheelVis_FL/Hub/Wheel_Mesh" unique_id=1442866610]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.023624241, 0)
+mesh = SubResource("CylinderMesh_qcqm5")
+skeleton = NodePath("../../../..")
+
+[node name="Marker" type="MeshInstance3D" parent="MMT_Visual_Nodes/WheelVis_FL/Hub/Wheel_Mesh" unique_id=30915262]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.108462304, 0.06545824, 0)
+mesh = SubResource("CylinderMesh_7nokl")
+skeleton = NodePath("../../../..")
+
+[node name="WheelVis_RL" type="Node3D" parent="MMT_Visual_Nodes" unique_id=946481037 node_paths=PackedStringArray("physics_wheel", "hub_node", "wheel_mesh")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.71, 0.35, 1.3)
+script = ExtResource("12_6tc34")
+physics_wheel = NodePath("../../MMT_Physics_Nodes/Wheels/Wheel_RL")
+hub_node = NodePath("Hub")
+wheel_mesh = NodePath("Hub/Wheel_Mesh")
+reverse_spin_direction = true
+
+[node name="Hub" type="Node3D" parent="MMT_Visual_Nodes/WheelVis_RL" unique_id=740134335]
+
+[node name="Wheel_Mesh" type="MeshInstance3D" parent="MMT_Visual_Nodes/WheelVis_RL/Hub" unique_id=372105914]
+transform = Transform3D(-4.371139e-08, -1, 0, 1, -4.371139e-08, 0, 0, 0, 1, 0, 0, 0)
+mesh = SubResource("CylinderMesh_2hqnl")
+skeleton = NodePath("../../..")
+
+[node name="Wheel_Mesh2" type="MeshInstance3D" parent="MMT_Visual_Nodes/WheelVis_RL/Hub/Wheel_Mesh" unique_id=275378339]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.023624241, 0)
+mesh = SubResource("CylinderMesh_qcqm5")
+skeleton = NodePath("../../../..")
+
+[node name="Marker" type="MeshInstance3D" parent="MMT_Visual_Nodes/WheelVis_RL/Hub/Wheel_Mesh" unique_id=12706265]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.108462304, 0.06545824, 0)
+mesh = SubResource("CylinderMesh_7nokl")
+skeleton = NodePath("../../../..")
+
+[node name="WheelVis_FR" type="Node3D" parent="MMT_Visual_Nodes" unique_id=795136055 node_paths=PackedStringArray("physics_wheel", "hub_node", "wheel_mesh")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.71, 0.35, -1.3)
+script = ExtResource("12_6tc34")
+physics_wheel = NodePath("../../MMT_Physics_Nodes/Wheels/Wheel_FR")
+hub_node = NodePath("Hub")
+wheel_mesh = NodePath("Hub/Wheel_Mesh")
+reverse_spin_direction = true
+
+[node name="Hub" type="Node3D" parent="MMT_Visual_Nodes/WheelVis_FR" unique_id=801704122]
+
+[node name="Wheel_Mesh" type="MeshInstance3D" parent="MMT_Visual_Nodes/WheelVis_FR/Hub" unique_id=903526011]
+transform = Transform3D(-4.371139e-08, -1, 0, 1, -4.371139e-08, 0, 0, 0, 1, 0, 0, 0)
+mesh = SubResource("CylinderMesh_2hqnl")
+skeleton = NodePath("../../..")
+
+[node name="Wheel_Mesh2" type="MeshInstance3D" parent="MMT_Visual_Nodes/WheelVis_FR/Hub/Wheel_Mesh" unique_id=1073234737]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.01374054, 0)
+mesh = SubResource("CylinderMesh_qcqm5")
+skeleton = NodePath("../../../..")
+
+[node name="Marker" type="MeshInstance3D" parent="MMT_Visual_Nodes/WheelVis_FR/Hub/Wheel_Mesh" unique_id=2070671766]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.108462304, -0.060110867, 0)
+mesh = SubResource("CylinderMesh_7nokl")
+skeleton = NodePath("../../../..")
+
+[node name="WheelVis_RR" type="Node3D" parent="MMT_Visual_Nodes" unique_id=974604352 node_paths=PackedStringArray("physics_wheel", "hub_node", "wheel_mesh")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.71, 0.35, 1.3)
+script = ExtResource("12_6tc34")
+physics_wheel = NodePath("../../MMT_Physics_Nodes/Wheels/Wheel_RR")
+hub_node = NodePath("Hub")
+wheel_mesh = NodePath("Hub/Wheel_Mesh")
+reverse_spin_direction = true
+
+[node name="Hub" type="Node3D" parent="MMT_Visual_Nodes/WheelVis_RR" unique_id=1466010709]
+
+[node name="Wheel_Mesh" type="MeshInstance3D" parent="MMT_Visual_Nodes/WheelVis_RR/Hub" unique_id=2099669726]
+transform = Transform3D(-4.371139e-08, -1, 0, 1, -4.371139e-08, 0, 0, 0, 1, 0, 0, 0)
+mesh = SubResource("CylinderMesh_2hqnl")
+skeleton = NodePath("../../..")
+
+[node name="Wheel_Mesh2" type="MeshInstance3D" parent="MMT_Visual_Nodes/WheelVis_RR/Hub/Wheel_Mesh" unique_id=1114679813]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.01374054, 0)
+mesh = SubResource("CylinderMesh_qcqm5")
+skeleton = NodePath("../../../..")
+
+[node name="Marker" type="MeshInstance3D" parent="MMT_Visual_Nodes/WheelVis_RR/Hub/Wheel_Mesh" unique_id=1650228850]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.108462304, -0.060110867, 0)
+mesh = SubResource("CylinderMesh_7nokl")
+skeleton = NodePath("../../../..")
+
+[node name="PlateSwitch" type="Node" parent="MMT_Visual_Nodes" unique_id=1011017362 node_paths=PackedStringArray("empty_car", "full_car")]
+script = ExtResource("13_aqn5r")
+empty_car = NodePath("../TaxiPlateGreen")
+full_car = NodePath("../TaxiPlateRed")
+
+[node name="TaxiPlateGreen" parent="MMT_Visual_Nodes" unique_id=99313094 instance=ExtResource("14_2efox")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.0660095, 0)
+
+[node name="TaxiPlateRed" parent="MMT_Visual_Nodes" unique_id=1960654011 instance=ExtResource("15_a2cbm")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.0660095, 0)
+visible = false
+
+[node name="Marker3D" type="Marker3D" parent="." unique_id=1079935575]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.3242531, -0.35)
+
+[node name="Rl" type="Node3D" parent="." unique_id=1529370091]
+
+[node name="AITaxiController" type="Node3D" parent="Rl" unique_id=383645183 node_paths=PackedStringArray("taxi_service", "vehicle_resetter", "sensor_manager", "reward_manager")]
+script = ExtResource("13_oprov")
+taxi_service = NodePath("../../TaxiService")
+vehicle_resetter = NodePath("../../VehicleStateResetter")
+sensor_manager = NodePath("../Sensor")
+reward_manager = NodePath("../Reward")
+metadata/_custom_type_script = "uid://dw0o06d00ba3"
+
+[node name="Sensor" type="Node3D" parent="Rl" unique_id=1512662067 node_paths=PackedStringArray("raycast_type", "position_type")]
+script = ExtResource("14_1wbye")
+raycast_type = NodePath("RayCast")
+position_type = NodePath("Position")
+
+[node name="RayCast" type="Node3D" parent="Rl/Sensor" unique_id=2050836007]
+
+[node name="FarSightFront" type="Node3D" parent="Rl/Sensor/RayCast" unique_id=1552233232]
+transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 0, 0.5, -2.25)
+script = ExtResource("15_s3x73")
+collision_mask = 127
+boolean_class_mask = 127
+n_rays_height = 3.0
+ray_length = 7.0
+cone_width = 180.0
+cone_height = 40.0
+class_sensor = true
+
+[node name="node_0_0 0_1" type="RayCast3D" parent="Rl/Sensor/RayCast/FarSightFront" unique_id=957820405]
+enabled = false
+target_position = Vector3(-6.579224, -1.6143111, 1.7628978)
+collision_mask = 127
+
+[node name="node_0_0 1_1" type="RayCast3D" parent="Rl/Sensor/RayCast/FarSightFront" unique_id=415702332]
+enabled = false
+target_position = Vector3(-6.761481, 2.1702293e-16, 1.8117334)
+collision_mask = 127
+
+[node name="node_0_0 2_1" type="RayCast3D" parent="Rl/Sensor/RayCast/FarSightFront" unique_id=2058992078]
+enabled = false
+target_position = Vector3(-6.579224, 1.6143111, 1.7628978)
+collision_mask = 127
+
+[node name="node_1_0 0_1" type="RayCast3D" parent="Rl/Sensor/RayCast/FarSightFront" unique_id=165616330]
+enabled = false
+target_position = Vector3(-4.8163266, -1.6143111, 4.8163266)
+collision_mask = 127
+
+[node name="node_1_0 1_1" type="RayCast3D" parent="Rl/Sensor/RayCast/FarSightFront" unique_id=1635139292]
+enabled = false
+target_position = Vector3(-4.9497476, 2.1702293e-16, 4.9497476)
+collision_mask = 127
+
+[node name="node_1_0 2_1" type="RayCast3D" parent="Rl/Sensor/RayCast/FarSightFront" unique_id=801840423]
+enabled = false
+target_position = Vector3(-4.8163266, 1.6143111, 4.8163266)
+collision_mask = 127
+
+[node name="node_2_0 0_1" type="RayCast3D" parent="Rl/Sensor/RayCast/FarSightFront" unique_id=1081805883]
+enabled = false
+target_position = Vector3(-1.7628978, -1.6143111, 6.579224)
+collision_mask = 127
+
+[node name="node_2_0 1_1" type="RayCast3D" parent="Rl/Sensor/RayCast/FarSightFront" unique_id=955271161]
+enabled = false
+target_position = Vector3(-1.8117334, 2.1702293e-16, 6.761481)
+collision_mask = 127
+
+[node name="node_2_0 2_1" type="RayCast3D" parent="Rl/Sensor/RayCast/FarSightFront" unique_id=1010517433]
+enabled = false
+target_position = Vector3(-1.7628978, 1.6143111, 6.579224)
+collision_mask = 127
+
+[node name="node_3_0 0_1" type="RayCast3D" parent="Rl/Sensor/RayCast/FarSightFront" unique_id=1863007920]
+enabled = false
+target_position = Vector3(1.7628978, -1.6143111, 6.579224)
+collision_mask = 127
+
+[node name="node_3_0 1_1" type="RayCast3D" parent="Rl/Sensor/RayCast/FarSightFront" unique_id=210153487]
+enabled = false
+target_position = Vector3(1.8117334, 2.1702293e-16, 6.761481)
+collision_mask = 127
+
+[node name="node_3_0 2_1" type="RayCast3D" parent="Rl/Sensor/RayCast/FarSightFront" unique_id=1936190657]
+enabled = false
+target_position = Vector3(1.7628978, 1.6143111, 6.579224)
+collision_mask = 127
+
+[node name="node_4_0 0_1" type="RayCast3D" parent="Rl/Sensor/RayCast/FarSightFront" unique_id=282285752]
+enabled = false
+target_position = Vector3(4.8163266, -1.6143111, 4.8163266)
+collision_mask = 127
+
+[node name="node_4_0 1_1" type="RayCast3D" parent="Rl/Sensor/RayCast/FarSightFront" unique_id=1729560432]
+enabled = false
+target_position = Vector3(4.9497476, 2.1702293e-16, 4.9497476)
+collision_mask = 127
+
+[node name="node_4_0 2_1" type="RayCast3D" parent="Rl/Sensor/RayCast/FarSightFront" unique_id=896843705]
+enabled = false
+target_position = Vector3(4.8163266, 1.6143111, 4.8163266)
+collision_mask = 127
+
+[node name="node_5_0 0_1" type="RayCast3D" parent="Rl/Sensor/RayCast/FarSightFront" unique_id=1838930145]
+enabled = false
+target_position = Vector3(6.579224, -1.6143111, 1.7628978)
+collision_mask = 127
+
+[node name="node_5_0 1_1" type="RayCast3D" parent="Rl/Sensor/RayCast/FarSightFront" unique_id=439540123]
+enabled = false
+target_position = Vector3(6.761481, 2.1702293e-16, 1.8117334)
+collision_mask = 127
+
+[node name="node_5_0 2_1" type="RayCast3D" parent="Rl/Sensor/RayCast/FarSightFront" unique_id=1785027606]
+enabled = false
+target_position = Vector3(6.579224, 1.6143111, 1.7628978)
+collision_mask = 127
+
+[node name="NearSightFront" type="Node3D" parent="Rl/Sensor/RayCast" unique_id=2042375437]
+transform = Transform3D(-1, 0, -1.509958e-07, 0, 1, 0, 1.509958e-07, 0, -1, 0, 0.5, -2.25)
+script = ExtResource("15_s3x73")
+collision_mask = 127
+boolean_class_mask = 127
+n_rays_width = 10.0
+n_rays_height = 3.0
+ray_length = 3.0
+cone_width = 180.0
+class_sensor = true
+
+[node name="node_0_0 0_0" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightFront" unique_id=1873778298]
+enabled = false
+target_position = Vector3(-2.7843704, -1.0260605, 0.44100094)
+collision_mask = 127
+
+[node name="node_0_0 1_0" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightFront" unique_id=955036258]
+enabled = false
+target_position = Vector3(-2.963065, 0, 0.4693034)
+collision_mask = 127
+
+[node name="node_0_0 2_0" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightFront" unique_id=1648467985]
+enabled = false
+target_position = Vector3(-2.7843704, 1.0260605, 0.44100094)
+collision_mask = 127
+
+[node name="node_1_0 0_0" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightFront" unique_id=1928509951]
+enabled = false
+target_position = Vector3(-2.5118167, -1.0260605, 1.2798345)
+collision_mask = 127
+
+[node name="node_1_0 1_0" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightFront" unique_id=436861424]
+enabled = false
+target_position = Vector3(-2.6730196, 0, 1.3619715)
+collision_mask = 127
+
+[node name="node_1_0 2_0" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightFront" unique_id=202720970]
+enabled = false
+target_position = Vector3(-2.5118167, 1.0260605, 1.2798345)
+collision_mask = 127
+
+[node name="node_2_0 0_0" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightFront" unique_id=974373647]
+enabled = false
+target_position = Vector3(-1.9933891, -1.0260605, 1.9933891)
+collision_mask = 127
+
+[node name="node_2_0 1_0" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightFront" unique_id=406870062]
+enabled = false
+target_position = Vector3(-2.1213202, 0, 2.1213202)
+collision_mask = 127
+
+[node name="node_2_0 2_0" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightFront" unique_id=714453219]
+enabled = false
+target_position = Vector3(-1.9933891, 1.0260605, 1.9933891)
+collision_mask = 127
+
+[node name="node_3_0 0_0" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightFront" unique_id=2089734081]
+enabled = false
+target_position = Vector3(-1.2798345, -1.0260605, 2.5118167)
+collision_mask = 127
+
+[node name="node_3_0 1_0" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightFront" unique_id=620104960]
+enabled = false
+target_position = Vector3(-1.3619715, 0, 2.6730196)
+collision_mask = 127
+
+[node name="node_3_0 2_0" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightFront" unique_id=704388933]
+enabled = false
+target_position = Vector3(-1.2798345, 1.0260605, 2.5118167)
+collision_mask = 127
+
+[node name="node_4_0 0_0" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightFront" unique_id=1133122825]
+enabled = false
+target_position = Vector3(-0.44100094, -1.0260605, 2.7843704)
+collision_mask = 127
+
+[node name="node_4_0 1_0" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightFront" unique_id=1850604325]
+enabled = false
+target_position = Vector3(-0.4693034, 0, 2.963065)
+collision_mask = 127
+
+[node name="node_4_0 2_0" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightFront" unique_id=849827847]
+enabled = false
+target_position = Vector3(-0.44100094, 1.0260605, 2.7843704)
+collision_mask = 127
+
+[node name="node_5_0 0_0" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightFront" unique_id=1471656144]
+enabled = false
+target_position = Vector3(0.44100094, -1.0260605, 2.7843704)
+collision_mask = 127
+
+[node name="node_5_0 1_0" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightFront" unique_id=343026723]
+enabled = false
+target_position = Vector3(0.4693034, 0, 2.963065)
+collision_mask = 127
+
+[node name="node_5_0 2_0" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightFront" unique_id=160734855]
+enabled = false
+target_position = Vector3(0.44100094, 1.0260605, 2.7843704)
+collision_mask = 127
+
+[node name="node_6_0 0_0" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightFront" unique_id=1928922713]
+enabled = false
+target_position = Vector3(1.2798345, -1.0260605, 2.5118167)
+collision_mask = 127
+
+[node name="node_6_0 1_0" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightFront" unique_id=1751092765]
+enabled = false
+target_position = Vector3(1.3619715, 0, 2.6730196)
+collision_mask = 127
+
+[node name="node_6_0 2_0" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightFront" unique_id=24434102]
+enabled = false
+target_position = Vector3(1.2798345, 1.0260605, 2.5118167)
+collision_mask = 127
+
+[node name="node_7_0 0_0" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightFront" unique_id=90250443]
+enabled = false
+target_position = Vector3(1.9933891, -1.0260605, 1.9933891)
+collision_mask = 127
+
+[node name="node_7_0 1_0" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightFront" unique_id=705070569]
+enabled = false
+target_position = Vector3(2.1213202, 0, 2.1213202)
+collision_mask = 127
+
+[node name="node_7_0 2_0" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightFront" unique_id=2094824862]
+enabled = false
+target_position = Vector3(1.9933891, 1.0260605, 1.9933891)
+collision_mask = 127
+
+[node name="node_8_0 0_0" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightFront" unique_id=39471702]
+enabled = false
+target_position = Vector3(2.5118167, -1.0260605, 1.2798345)
+collision_mask = 127
+
+[node name="node_8_0 1_0" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightFront" unique_id=893354560]
+enabled = false
+target_position = Vector3(2.6730196, 0, 1.3619715)
+collision_mask = 127
+
+[node name="node_8_0 2_0" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightFront" unique_id=1039957481]
+enabled = false
+target_position = Vector3(2.5118167, 1.0260605, 1.2798345)
+collision_mask = 127
+
+[node name="node_9_0 0_0" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightFront" unique_id=146905598]
+enabled = false
+target_position = Vector3(2.7843704, -1.0260605, 0.44100094)
+collision_mask = 127
+
+[node name="node_9_0 1_0" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightFront" unique_id=1448063240]
+enabled = false
+target_position = Vector3(2.963065, 0, 0.4693034)
+collision_mask = 127
+
+[node name="node_9_0 2_0" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightFront" unique_id=2130845361]
+enabled = false
+target_position = Vector3(2.7843704, 1.0260605, 0.44100094)
+collision_mask = 127
+
+[node name="FarSightBack" type="Node3D" parent="Rl/Sensor/RayCast" unique_id=1634397072]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 2.35)
+script = ExtResource("15_s3x73")
+collision_mask = 127
+boolean_class_mask = 127
+n_rays_height = 3.0
+ray_length = 7.0
+cone_width = 180.0
+cone_height = 40.0
+class_sensor = true
+
+[node name="node_0_0 0_1" type="RayCast3D" parent="Rl/Sensor/RayCast/FarSightBack" unique_id=82154486]
+enabled = false
+target_position = Vector3(-6.579224, -1.6143111, 1.7628978)
+collision_mask = 127
+
+[node name="node_0_0 1_1" type="RayCast3D" parent="Rl/Sensor/RayCast/FarSightBack" unique_id=953321008]
+enabled = false
+target_position = Vector3(-6.761481, 2.1702293e-16, 1.8117334)
+collision_mask = 127
+
+[node name="node_0_0 2_1" type="RayCast3D" parent="Rl/Sensor/RayCast/FarSightBack" unique_id=566749577]
+enabled = false
+target_position = Vector3(-6.579224, 1.6143111, 1.7628978)
+collision_mask = 127
+
+[node name="node_1_0 0_1" type="RayCast3D" parent="Rl/Sensor/RayCast/FarSightBack" unique_id=1852366798]
+enabled = false
+target_position = Vector3(-4.8163266, -1.6143111, 4.8163266)
+collision_mask = 127
+
+[node name="node_1_0 1_1" type="RayCast3D" parent="Rl/Sensor/RayCast/FarSightBack" unique_id=660123192]
+enabled = false
+target_position = Vector3(-4.9497476, 2.1702293e-16, 4.9497476)
+collision_mask = 127
+
+[node name="node_1_0 2_1" type="RayCast3D" parent="Rl/Sensor/RayCast/FarSightBack" unique_id=1060004325]
+enabled = false
+target_position = Vector3(-4.8163266, 1.6143111, 4.8163266)
+collision_mask = 127
+
+[node name="node_2_0 0_1" type="RayCast3D" parent="Rl/Sensor/RayCast/FarSightBack" unique_id=1062280780]
+enabled = false
+target_position = Vector3(-1.7628978, -1.6143111, 6.579224)
+collision_mask = 127
+
+[node name="node_2_0 1_1" type="RayCast3D" parent="Rl/Sensor/RayCast/FarSightBack" unique_id=796607416]
+enabled = false
+target_position = Vector3(-1.8117334, 2.1702293e-16, 6.761481)
+collision_mask = 127
+
+[node name="node_2_0 2_1" type="RayCast3D" parent="Rl/Sensor/RayCast/FarSightBack" unique_id=662379632]
+enabled = false
+target_position = Vector3(-1.7628978, 1.6143111, 6.579224)
+collision_mask = 127
+
+[node name="node_3_0 0_1" type="RayCast3D" parent="Rl/Sensor/RayCast/FarSightBack" unique_id=1036543665]
+enabled = false
+target_position = Vector3(1.7628978, -1.6143111, 6.579224)
+collision_mask = 127
+
+[node name="node_3_0 1_1" type="RayCast3D" parent="Rl/Sensor/RayCast/FarSightBack" unique_id=1817092622]
+enabled = false
+target_position = Vector3(1.8117334, 2.1702293e-16, 6.761481)
+collision_mask = 127
+
+[node name="node_3_0 2_1" type="RayCast3D" parent="Rl/Sensor/RayCast/FarSightBack" unique_id=1428464588]
+enabled = false
+target_position = Vector3(1.7628978, 1.6143111, 6.579224)
+collision_mask = 127
+
+[node name="node_4_0 0_1" type="RayCast3D" parent="Rl/Sensor/RayCast/FarSightBack" unique_id=124026652]
+enabled = false
+target_position = Vector3(4.8163266, -1.6143111, 4.8163266)
+collision_mask = 127
+
+[node name="node_4_0 1_1" type="RayCast3D" parent="Rl/Sensor/RayCast/FarSightBack" unique_id=1027882798]
+enabled = false
+target_position = Vector3(4.9497476, 2.1702293e-16, 4.9497476)
+collision_mask = 127
+
+[node name="node_4_0 2_1" type="RayCast3D" parent="Rl/Sensor/RayCast/FarSightBack" unique_id=185355806]
+enabled = false
+target_position = Vector3(4.8163266, 1.6143111, 4.8163266)
+collision_mask = 127
+
+[node name="node_5_0 0_1" type="RayCast3D" parent="Rl/Sensor/RayCast/FarSightBack" unique_id=988384270]
+enabled = false
+target_position = Vector3(6.579224, -1.6143111, 1.7628978)
+collision_mask = 127
+
+[node name="node_5_0 1_1" type="RayCast3D" parent="Rl/Sensor/RayCast/FarSightBack" unique_id=989317363]
+enabled = false
+target_position = Vector3(6.761481, 2.1702293e-16, 1.8117334)
+collision_mask = 127
+
+[node name="node_5_0 2_1" type="RayCast3D" parent="Rl/Sensor/RayCast/FarSightBack" unique_id=558634843]
+enabled = false
+target_position = Vector3(6.579224, 1.6143111, 1.7628978)
+collision_mask = 127
+
+[node name="NearSightBack" type="Node3D" parent="Rl/Sensor/RayCast" unique_id=1927814264]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 2.35)
+script = ExtResource("15_s3x73")
+collision_mask = 127
+boolean_class_mask = 127
+n_rays_width = 10.0
+n_rays_height = 3.0
+ray_length = 3.0
+cone_width = 180.0
+class_sensor = true
+
+[node name="node_0_0 0_1" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightBack" unique_id=323001439]
+enabled = false
+target_position = Vector3(-2.7843704, -1.0260605, 0.44100094)
+collision_mask = 127
+
+[node name="node_0_0 1_1" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightBack" unique_id=888795021]
+enabled = false
+target_position = Vector3(-2.963065, 0, 0.4693034)
+collision_mask = 127
+
+[node name="node_0_0 2_0" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightBack" unique_id=1358105309]
+enabled = false
+target_position = Vector3(-2.7843704, 1.0260605, 0.44100094)
+collision_mask = 127
+
+[node name="node_1_0 0_1" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightBack" unique_id=967846808]
+enabled = false
+target_position = Vector3(-2.5118167, -1.0260605, 1.2798345)
+collision_mask = 127
+
+[node name="node_1_0 1_1" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightBack" unique_id=208558583]
+enabled = false
+target_position = Vector3(-2.6730196, 0, 1.3619715)
+collision_mask = 127
+
+[node name="node_1_0 2_0" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightBack" unique_id=1387440320]
+enabled = false
+target_position = Vector3(-2.5118167, 1.0260605, 1.2798345)
+collision_mask = 127
+
+[node name="node_2_0 0_1" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightBack" unique_id=1950506916]
+enabled = false
+target_position = Vector3(-1.9933891, -1.0260605, 1.9933891)
+collision_mask = 127
+
+[node name="node_2_0 1_1" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightBack" unique_id=879619829]
+enabled = false
+target_position = Vector3(-2.1213202, 0, 2.1213202)
+collision_mask = 127
+
+[node name="node_2_0 2_0" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightBack" unique_id=680508448]
+enabled = false
+target_position = Vector3(-1.9933891, 1.0260605, 1.9933891)
+collision_mask = 127
+
+[node name="node_3_0 0_1" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightBack" unique_id=1352041483]
+enabled = false
+target_position = Vector3(-1.2798345, -1.0260605, 2.5118167)
+collision_mask = 127
+
+[node name="node_3_0 1_1" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightBack" unique_id=2085279825]
+enabled = false
+target_position = Vector3(-1.3619715, 0, 2.6730196)
+collision_mask = 127
+
+[node name="node_3_0 2_0" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightBack" unique_id=1533544746]
+enabled = false
+target_position = Vector3(-1.2798345, 1.0260605, 2.5118167)
+collision_mask = 127
+
+[node name="node_4_0 0_1" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightBack" unique_id=1565950535]
+enabled = false
+target_position = Vector3(-0.44100094, -1.0260605, 2.7843704)
+collision_mask = 127
+
+[node name="node_4_0 1_1" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightBack" unique_id=558726866]
+enabled = false
+target_position = Vector3(-0.4693034, 0, 2.963065)
+collision_mask = 127
+
+[node name="node_4_0 2_0" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightBack" unique_id=1071243582]
+enabled = false
+target_position = Vector3(-0.44100094, 1.0260605, 2.7843704)
+collision_mask = 127
+
+[node name="node_5_0 0_1" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightBack" unique_id=1494422729]
+enabled = false
+target_position = Vector3(0.44100094, -1.0260605, 2.7843704)
+collision_mask = 127
+
+[node name="node_5_0 1_1" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightBack" unique_id=926953991]
+enabled = false
+target_position = Vector3(0.4693034, 0, 2.963065)
+collision_mask = 127
+
+[node name="node_5_0 2_0" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightBack" unique_id=1083856114]
+enabled = false
+target_position = Vector3(0.44100094, 1.0260605, 2.7843704)
+collision_mask = 127
+
+[node name="node_6_0 0_1" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightBack" unique_id=1852673830]
+enabled = false
+target_position = Vector3(1.2798345, -1.0260605, 2.5118167)
+collision_mask = 127
+
+[node name="node_6_0 1_1" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightBack" unique_id=1839444104]
+enabled = false
+target_position = Vector3(1.3619715, 0, 2.6730196)
+collision_mask = 127
+
+[node name="node_6_0 2_0" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightBack" unique_id=1409860090]
+enabled = false
+target_position = Vector3(1.2798345, 1.0260605, 2.5118167)
+collision_mask = 127
+
+[node name="node_7_0 0_1" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightBack" unique_id=375382163]
+enabled = false
+target_position = Vector3(1.9933891, -1.0260605, 1.9933891)
+collision_mask = 127
+
+[node name="node_7_0 1_1" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightBack" unique_id=1519541496]
+enabled = false
+target_position = Vector3(2.1213202, 0, 2.1213202)
+collision_mask = 127
+
+[node name="node_7_0 2_0" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightBack" unique_id=1909914575]
+enabled = false
+target_position = Vector3(1.9933891, 1.0260605, 1.9933891)
+collision_mask = 127
+
+[node name="node_8_0 0_1" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightBack" unique_id=722140365]
+enabled = false
+target_position = Vector3(2.5118167, -1.0260605, 1.2798345)
+collision_mask = 127
+
+[node name="node_8_0 1_1" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightBack" unique_id=1999797525]
+enabled = false
+target_position = Vector3(2.6730196, 0, 1.3619715)
+collision_mask = 127
+
+[node name="node_8_0 2_0" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightBack" unique_id=196375057]
+enabled = false
+target_position = Vector3(2.5118167, 1.0260605, 1.2798345)
+collision_mask = 127
+
+[node name="node_9_0 0_1" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightBack" unique_id=549297742]
+enabled = false
+target_position = Vector3(2.7843704, -1.0260605, 0.44100094)
+collision_mask = 127
+
+[node name="node_9_0 1_1" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightBack" unique_id=2091793911]
+enabled = false
+target_position = Vector3(2.963065, 0, 0.4693034)
+collision_mask = 127
+
+[node name="node_9_0 2_0" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightBack" unique_id=1888471156]
+enabled = false
+target_position = Vector3(2.7843704, 1.0260605, 0.44100094)
+collision_mask = 127
+
+[node name="FarSightLeft" type="Node3D" parent="Rl/Sensor/RayCast" unique_id=448890128]
+transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, -0.9, 0.5, 0.18107605)
+script = ExtResource("15_s3x73")
+collision_mask = 127
+boolean_class_mask = 127
+n_rays_height = 3.0
+ray_length = 7.0
+cone_width = 180.0
+cone_height = 40.0
+class_sensor = true
+
+[node name="node_0_0 0_1" type="RayCast3D" parent="Rl/Sensor/RayCast/FarSightLeft" unique_id=581381109]
+enabled = false
+target_position = Vector3(-6.579224, -1.6143111, 1.7628978)
+collision_mask = 127
+
+[node name="node_0_0 1_1" type="RayCast3D" parent="Rl/Sensor/RayCast/FarSightLeft" unique_id=1334566816]
+enabled = false
+target_position = Vector3(-6.761481, 2.1702293e-16, 1.8117334)
+collision_mask = 127
+
+[node name="node_0_0 2_1" type="RayCast3D" parent="Rl/Sensor/RayCast/FarSightLeft" unique_id=1694110445]
+enabled = false
+target_position = Vector3(-6.579224, 1.6143111, 1.7628978)
+collision_mask = 127
+
+[node name="node_1_0 0_1" type="RayCast3D" parent="Rl/Sensor/RayCast/FarSightLeft" unique_id=695397580]
+enabled = false
+target_position = Vector3(-4.8163266, -1.6143111, 4.8163266)
+collision_mask = 127
+
+[node name="node_1_0 1_1" type="RayCast3D" parent="Rl/Sensor/RayCast/FarSightLeft" unique_id=1782137242]
+enabled = false
+target_position = Vector3(-4.9497476, 2.1702293e-16, 4.9497476)
+collision_mask = 127
+
+[node name="node_1_0 2_1" type="RayCast3D" parent="Rl/Sensor/RayCast/FarSightLeft" unique_id=1896654117]
+enabled = false
+target_position = Vector3(-4.8163266, 1.6143111, 4.8163266)
+collision_mask = 127
+
+[node name="node_2_0 0_1" type="RayCast3D" parent="Rl/Sensor/RayCast/FarSightLeft" unique_id=1636965084]
+enabled = false
+target_position = Vector3(-1.7628978, -1.6143111, 6.579224)
+collision_mask = 127
+
+[node name="node_2_0 1_1" type="RayCast3D" parent="Rl/Sensor/RayCast/FarSightLeft" unique_id=1265003295]
+enabled = false
+target_position = Vector3(-1.8117334, 2.1702293e-16, 6.761481)
+collision_mask = 127
+
+[node name="node_2_0 2_1" type="RayCast3D" parent="Rl/Sensor/RayCast/FarSightLeft" unique_id=1647830274]
+enabled = false
+target_position = Vector3(-1.7628978, 1.6143111, 6.579224)
+collision_mask = 127
+
+[node name="node_3_0 0_1" type="RayCast3D" parent="Rl/Sensor/RayCast/FarSightLeft" unique_id=1467119174]
+enabled = false
+target_position = Vector3(1.7628978, -1.6143111, 6.579224)
+collision_mask = 127
+
+[node name="node_3_0 1_1" type="RayCast3D" parent="Rl/Sensor/RayCast/FarSightLeft" unique_id=116272529]
+enabled = false
+target_position = Vector3(1.8117334, 2.1702293e-16, 6.761481)
+collision_mask = 127
+
+[node name="node_3_0 2_1" type="RayCast3D" parent="Rl/Sensor/RayCast/FarSightLeft" unique_id=1630300092]
+enabled = false
+target_position = Vector3(1.7628978, 1.6143111, 6.579224)
+collision_mask = 127
+
+[node name="node_4_0 0_1" type="RayCast3D" parent="Rl/Sensor/RayCast/FarSightLeft" unique_id=1748952287]
+enabled = false
+target_position = Vector3(4.8163266, -1.6143111, 4.8163266)
+collision_mask = 127
+
+[node name="node_4_0 1_1" type="RayCast3D" parent="Rl/Sensor/RayCast/FarSightLeft" unique_id=1053730755]
+enabled = false
+target_position = Vector3(4.9497476, 2.1702293e-16, 4.9497476)
+collision_mask = 127
+
+[node name="node_4_0 2_1" type="RayCast3D" parent="Rl/Sensor/RayCast/FarSightLeft" unique_id=302352426]
+enabled = false
+target_position = Vector3(4.8163266, 1.6143111, 4.8163266)
+collision_mask = 127
+
+[node name="node_5_0 0_1" type="RayCast3D" parent="Rl/Sensor/RayCast/FarSightLeft" unique_id=53079398]
+enabled = false
+target_position = Vector3(6.579224, -1.6143111, 1.7628978)
+collision_mask = 127
+
+[node name="node_5_0 1_1" type="RayCast3D" parent="Rl/Sensor/RayCast/FarSightLeft" unique_id=1552525604]
+enabled = false
+target_position = Vector3(6.761481, 2.1702293e-16, 1.8117334)
+collision_mask = 127
+
+[node name="node_5_0 2_1" type="RayCast3D" parent="Rl/Sensor/RayCast/FarSightLeft" unique_id=687466255]
+enabled = false
+target_position = Vector3(6.579224, 1.6143111, 1.7628978)
+collision_mask = 127
+
+[node name="NearSightLeft" type="Node3D" parent="Rl/Sensor/RayCast" unique_id=523581184]
+transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, -0.9, 0.5, 0.18107605)
+script = ExtResource("15_s3x73")
+collision_mask = 127
+boolean_class_mask = 127
+n_rays_width = 10.0
+n_rays_height = 3.0
+ray_length = 3.0
+cone_width = 180.0
+class_sensor = true
+
+[node name="node_0_0 0_1" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightLeft" unique_id=1973255623]
+enabled = false
+target_position = Vector3(-2.7843704, -1.0260605, 0.44100094)
+collision_mask = 127
+
+[node name="node_0_0 1_1" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightLeft" unique_id=1654223544]
+enabled = false
+target_position = Vector3(-2.963065, 0, 0.4693034)
+collision_mask = 127
+
+[node name="node_0_0 2_0" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightLeft" unique_id=246560216]
+enabled = false
+target_position = Vector3(-2.7843704, 1.0260605, 0.44100094)
+collision_mask = 127
+
+[node name="node_1_0 0_1" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightLeft" unique_id=1706692306]
+enabled = false
+target_position = Vector3(-2.5118167, -1.0260605, 1.2798345)
+collision_mask = 127
+
+[node name="node_1_0 1_1" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightLeft" unique_id=1963700847]
+enabled = false
+target_position = Vector3(-2.6730196, 0, 1.3619715)
+collision_mask = 127
+
+[node name="node_1_0 2_0" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightLeft" unique_id=1894712450]
+enabled = false
+target_position = Vector3(-2.5118167, 1.0260605, 1.2798345)
+collision_mask = 127
+
+[node name="node_2_0 0_1" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightLeft" unique_id=403067354]
+enabled = false
+target_position = Vector3(-1.9933891, -1.0260605, 1.9933891)
+collision_mask = 127
+
+[node name="node_2_0 1_1" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightLeft" unique_id=1394768455]
+enabled = false
+target_position = Vector3(-2.1213202, 0, 2.1213202)
+collision_mask = 127
+
+[node name="node_2_0 2_0" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightLeft" unique_id=2062806749]
+enabled = false
+target_position = Vector3(-1.9933891, 1.0260605, 1.9933891)
+collision_mask = 127
+
+[node name="node_3_0 0_1" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightLeft" unique_id=1438491827]
+enabled = false
+target_position = Vector3(-1.2798345, -1.0260605, 2.5118167)
+collision_mask = 127
+
+[node name="node_3_0 1_1" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightLeft" unique_id=619575925]
+enabled = false
+target_position = Vector3(-1.3619715, 0, 2.6730196)
+collision_mask = 127
+
+[node name="node_3_0 2_0" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightLeft" unique_id=253923931]
+enabled = false
+target_position = Vector3(-1.2798345, 1.0260605, 2.5118167)
+collision_mask = 127
+
+[node name="node_4_0 0_1" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightLeft" unique_id=1300628778]
+enabled = false
+target_position = Vector3(-0.44100094, -1.0260605, 2.7843704)
+collision_mask = 127
+
+[node name="node_4_0 1_1" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightLeft" unique_id=689312148]
+enabled = false
+target_position = Vector3(-0.4693034, 0, 2.963065)
+collision_mask = 127
+
+[node name="node_4_0 2_0" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightLeft" unique_id=1992835979]
+enabled = false
+target_position = Vector3(-0.44100094, 1.0260605, 2.7843704)
+collision_mask = 127
+
+[node name="node_5_0 0_1" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightLeft" unique_id=606946480]
+enabled = false
+target_position = Vector3(0.44100094, -1.0260605, 2.7843704)
+collision_mask = 127
+
+[node name="node_5_0 1_1" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightLeft" unique_id=1481654810]
+enabled = false
+target_position = Vector3(0.4693034, 0, 2.963065)
+collision_mask = 127
+
+[node name="node_5_0 2_0" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightLeft" unique_id=380937282]
+enabled = false
+target_position = Vector3(0.44100094, 1.0260605, 2.7843704)
+collision_mask = 127
+
+[node name="node_6_0 0_1" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightLeft" unique_id=136724225]
+enabled = false
+target_position = Vector3(1.2798345, -1.0260605, 2.5118167)
+collision_mask = 127
+
+[node name="node_6_0 1_1" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightLeft" unique_id=67814628]
+enabled = false
+target_position = Vector3(1.3619715, 0, 2.6730196)
+collision_mask = 127
+
+[node name="node_6_0 2_0" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightLeft" unique_id=1626294878]
+enabled = false
+target_position = Vector3(1.2798345, 1.0260605, 2.5118167)
+collision_mask = 127
+
+[node name="node_7_0 0_1" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightLeft" unique_id=1667608636]
+enabled = false
+target_position = Vector3(1.9933891, -1.0260605, 1.9933891)
+collision_mask = 127
+
+[node name="node_7_0 1_1" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightLeft" unique_id=1826700654]
+enabled = false
+target_position = Vector3(2.1213202, 0, 2.1213202)
+collision_mask = 127
+
+[node name="node_7_0 2_0" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightLeft" unique_id=398239643]
+enabled = false
+target_position = Vector3(1.9933891, 1.0260605, 1.9933891)
+collision_mask = 127
+
+[node name="node_8_0 0_1" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightLeft" unique_id=1605970198]
+enabled = false
+target_position = Vector3(2.5118167, -1.0260605, 1.2798345)
+collision_mask = 127
+
+[node name="node_8_0 1_1" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightLeft" unique_id=1134593714]
+enabled = false
+target_position = Vector3(2.6730196, 0, 1.3619715)
+collision_mask = 127
+
+[node name="node_8_0 2_0" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightLeft" unique_id=447900879]
+enabled = false
+target_position = Vector3(2.5118167, 1.0260605, 1.2798345)
+collision_mask = 127
+
+[node name="node_9_0 0_1" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightLeft" unique_id=397900773]
+enabled = false
+target_position = Vector3(2.7843704, -1.0260605, 0.44100094)
+collision_mask = 127
+
+[node name="node_9_0 1_1" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightLeft" unique_id=1744532676]
+enabled = false
+target_position = Vector3(2.963065, 0, 0.4693034)
+collision_mask = 127
+
+[node name="node_9_0 2_0" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightLeft" unique_id=1040872449]
+enabled = false
+target_position = Vector3(2.7843704, 1.0260605, 0.44100094)
+collision_mask = 127
+
+[node name="FarSightRight" type="Node3D" parent="Rl/Sensor/RayCast" unique_id=1209446509]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 0.9, 0.5, 0.181)
+script = ExtResource("15_s3x73")
+collision_mask = 127
+boolean_class_mask = 127
+n_rays_height = 3.0
+ray_length = 7.0
+cone_width = 180.0
+cone_height = 40.0
+class_sensor = true
+
+[node name="node_0_0 0_1" type="RayCast3D" parent="Rl/Sensor/RayCast/FarSightRight" unique_id=1750913950]
+enabled = false
+target_position = Vector3(-6.579224, -1.6143111, 1.7628978)
+collision_mask = 127
+
+[node name="node_0_0 1_1" type="RayCast3D" parent="Rl/Sensor/RayCast/FarSightRight" unique_id=1429350444]
+enabled = false
+target_position = Vector3(-6.761481, 2.1702293e-16, 1.8117334)
+collision_mask = 127
+
+[node name="node_0_0 2_1" type="RayCast3D" parent="Rl/Sensor/RayCast/FarSightRight" unique_id=1465485950]
+enabled = false
+target_position = Vector3(-6.579224, 1.6143111, 1.7628978)
+collision_mask = 127
+
+[node name="node_1_0 0_1" type="RayCast3D" parent="Rl/Sensor/RayCast/FarSightRight" unique_id=1276003699]
+enabled = false
+target_position = Vector3(-4.8163266, -1.6143111, 4.8163266)
+collision_mask = 127
+
+[node name="node_1_0 1_1" type="RayCast3D" parent="Rl/Sensor/RayCast/FarSightRight" unique_id=1829453197]
+enabled = false
+target_position = Vector3(-4.9497476, 2.1702293e-16, 4.9497476)
+collision_mask = 127
+
+[node name="node_1_0 2_1" type="RayCast3D" parent="Rl/Sensor/RayCast/FarSightRight" unique_id=760330770]
+enabled = false
+target_position = Vector3(-4.8163266, 1.6143111, 4.8163266)
+collision_mask = 127
+
+[node name="node_2_0 0_1" type="RayCast3D" parent="Rl/Sensor/RayCast/FarSightRight" unique_id=1555825484]
+enabled = false
+target_position = Vector3(-1.7628978, -1.6143111, 6.579224)
+collision_mask = 127
+
+[node name="node_2_0 1_1" type="RayCast3D" parent="Rl/Sensor/RayCast/FarSightRight" unique_id=1658517144]
+enabled = false
+target_position = Vector3(-1.8117334, 2.1702293e-16, 6.761481)
+collision_mask = 127
+
+[node name="node_2_0 2_1" type="RayCast3D" parent="Rl/Sensor/RayCast/FarSightRight" unique_id=260348824]
+enabled = false
+target_position = Vector3(-1.7628978, 1.6143111, 6.579224)
+collision_mask = 127
+
+[node name="node_3_0 0_1" type="RayCast3D" parent="Rl/Sensor/RayCast/FarSightRight" unique_id=1800515074]
+enabled = false
+target_position = Vector3(1.7628978, -1.6143111, 6.579224)
+collision_mask = 127
+
+[node name="node_3_0 1_1" type="RayCast3D" parent="Rl/Sensor/RayCast/FarSightRight" unique_id=40118573]
+enabled = false
+target_position = Vector3(1.8117334, 2.1702293e-16, 6.761481)
+collision_mask = 127
+
+[node name="node_3_0 2_1" type="RayCast3D" parent="Rl/Sensor/RayCast/FarSightRight" unique_id=1444453035]
+enabled = false
+target_position = Vector3(1.7628978, 1.6143111, 6.579224)
+collision_mask = 127
+
+[node name="node_4_0 0_1" type="RayCast3D" parent="Rl/Sensor/RayCast/FarSightRight" unique_id=252319493]
+enabled = false
+target_position = Vector3(4.8163266, -1.6143111, 4.8163266)
+collision_mask = 127
+
+[node name="node_4_0 1_1" type="RayCast3D" parent="Rl/Sensor/RayCast/FarSightRight" unique_id=1057186691]
+enabled = false
+target_position = Vector3(4.9497476, 2.1702293e-16, 4.9497476)
+collision_mask = 127
+
+[node name="node_4_0 2_1" type="RayCast3D" parent="Rl/Sensor/RayCast/FarSightRight" unique_id=1131874012]
+enabled = false
+target_position = Vector3(4.8163266, 1.6143111, 4.8163266)
+collision_mask = 127
+
+[node name="node_5_0 0_1" type="RayCast3D" parent="Rl/Sensor/RayCast/FarSightRight" unique_id=1223871039]
+enabled = false
+target_position = Vector3(6.579224, -1.6143111, 1.7628978)
+collision_mask = 127
+
+[node name="node_5_0 1_1" type="RayCast3D" parent="Rl/Sensor/RayCast/FarSightRight" unique_id=1218173909]
+enabled = false
+target_position = Vector3(6.761481, 2.1702293e-16, 1.8117334)
+collision_mask = 127
+
+[node name="node_5_0 2_1" type="RayCast3D" parent="Rl/Sensor/RayCast/FarSightRight" unique_id=1251703738]
+enabled = false
+target_position = Vector3(6.579224, 1.6143111, 1.7628978)
+collision_mask = 127
+
+[node name="NearSightRight" type="Node3D" parent="Rl/Sensor/RayCast" unique_id=1613089884]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 0.9, 0.5, 0.181)
+script = ExtResource("15_s3x73")
+collision_mask = 127
+boolean_class_mask = 127
+n_rays_width = 10.0
+n_rays_height = 3.0
+ray_length = 3.0
+cone_width = 180.0
+class_sensor = true
+
+[node name="node_0_0 0_1" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightRight" unique_id=404943892]
+enabled = false
+target_position = Vector3(-2.7843704, -1.0260605, 0.44100094)
+collision_mask = 127
+
+[node name="node_0_0 1_1" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightRight" unique_id=1447156000]
+enabled = false
+target_position = Vector3(-2.963065, 0, 0.4693034)
+collision_mask = 127
+
+[node name="node_0_0 2_0" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightRight" unique_id=1288986548]
+enabled = false
+target_position = Vector3(-2.7843704, 1.0260605, 0.44100094)
+collision_mask = 127
+
+[node name="node_1_0 0_1" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightRight" unique_id=1409838208]
+enabled = false
+target_position = Vector3(-2.5118167, -1.0260605, 1.2798345)
+collision_mask = 127
+
+[node name="node_1_0 1_1" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightRight" unique_id=227916838]
+enabled = false
+target_position = Vector3(-2.6730196, 0, 1.3619715)
+collision_mask = 127
+
+[node name="node_1_0 2_0" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightRight" unique_id=445740042]
+enabled = false
+target_position = Vector3(-2.5118167, 1.0260605, 1.2798345)
+collision_mask = 127
+
+[node name="node_2_0 0_1" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightRight" unique_id=844055047]
+enabled = false
+target_position = Vector3(-1.9933891, -1.0260605, 1.9933891)
+collision_mask = 127
+
+[node name="node_2_0 1_1" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightRight" unique_id=777217545]
+enabled = false
+target_position = Vector3(-2.1213202, 0, 2.1213202)
+collision_mask = 127
+
+[node name="node_2_0 2_0" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightRight" unique_id=1202519575]
+enabled = false
+target_position = Vector3(-1.9933891, 1.0260605, 1.9933891)
+collision_mask = 127
+
+[node name="node_3_0 0_1" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightRight" unique_id=1398740237]
+enabled = false
+target_position = Vector3(-1.2798345, -1.0260605, 2.5118167)
+collision_mask = 127
+
+[node name="node_3_0 1_1" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightRight" unique_id=1444990421]
+enabled = false
+target_position = Vector3(-1.3619715, 0, 2.6730196)
+collision_mask = 127
+
+[node name="node_3_0 2_0" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightRight" unique_id=28980146]
+enabled = false
+target_position = Vector3(-1.2798345, 1.0260605, 2.5118167)
+collision_mask = 127
+
+[node name="node_4_0 0_1" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightRight" unique_id=2035209162]
+enabled = false
+target_position = Vector3(-0.44100094, -1.0260605, 2.7843704)
+collision_mask = 127
+
+[node name="node_4_0 1_1" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightRight" unique_id=842485643]
+enabled = false
+target_position = Vector3(-0.4693034, 0, 2.963065)
+collision_mask = 127
+
+[node name="node_4_0 2_0" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightRight" unique_id=434809546]
+enabled = false
+target_position = Vector3(-0.44100094, 1.0260605, 2.7843704)
+collision_mask = 127
+
+[node name="node_5_0 0_1" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightRight" unique_id=701900243]
+enabled = false
+target_position = Vector3(0.44100094, -1.0260605, 2.7843704)
+collision_mask = 127
+
+[node name="node_5_0 1_1" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightRight" unique_id=449633011]
+enabled = false
+target_position = Vector3(0.4693034, 0, 2.963065)
+collision_mask = 127
+
+[node name="node_5_0 2_0" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightRight" unique_id=749269617]
+enabled = false
+target_position = Vector3(0.44100094, 1.0260605, 2.7843704)
+collision_mask = 127
+
+[node name="node_6_0 0_1" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightRight" unique_id=1962125064]
+enabled = false
+target_position = Vector3(1.2798345, -1.0260605, 2.5118167)
+collision_mask = 127
+
+[node name="node_6_0 1_1" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightRight" unique_id=531556728]
+enabled = false
+target_position = Vector3(1.3619715, 0, 2.6730196)
+collision_mask = 127
+
+[node name="node_6_0 2_0" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightRight" unique_id=1439596971]
+enabled = false
+target_position = Vector3(1.2798345, 1.0260605, 2.5118167)
+collision_mask = 127
+
+[node name="node_7_0 0_1" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightRight" unique_id=128213190]
+enabled = false
+target_position = Vector3(1.9933891, -1.0260605, 1.9933891)
+collision_mask = 127
+
+[node name="node_7_0 1_1" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightRight" unique_id=1817468695]
+enabled = false
+target_position = Vector3(2.1213202, 0, 2.1213202)
+collision_mask = 127
+
+[node name="node_7_0 2_0" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightRight" unique_id=712013605]
+enabled = false
+target_position = Vector3(1.9933891, 1.0260605, 1.9933891)
+collision_mask = 127
+
+[node name="node_8_0 0_1" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightRight" unique_id=1529934150]
+enabled = false
+target_position = Vector3(2.5118167, -1.0260605, 1.2798345)
+collision_mask = 127
+
+[node name="node_8_0 1_1" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightRight" unique_id=1510910330]
+enabled = false
+target_position = Vector3(2.6730196, 0, 1.3619715)
+collision_mask = 127
+
+[node name="node_8_0 2_0" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightRight" unique_id=1662046744]
+enabled = false
+target_position = Vector3(2.5118167, 1.0260605, 1.2798345)
+collision_mask = 127
+
+[node name="node_9_0 0_1" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightRight" unique_id=1888083660]
+enabled = false
+target_position = Vector3(2.7843704, -1.0260605, 0.44100094)
+collision_mask = 127
+
+[node name="node_9_0 1_1" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightRight" unique_id=985695573]
+enabled = false
+target_position = Vector3(2.963065, 0, 0.4693034)
+collision_mask = 127
+
+[node name="node_9_0 2_0" type="RayCast3D" parent="Rl/Sensor/RayCast/NearSightRight" unique_id=816231291]
+enabled = false
+target_position = Vector3(2.7843704, 1.0260605, 0.44100094)
+collision_mask = 127
+
+[node name="Position" type="Node3D" parent="Rl/Sensor" unique_id=1586058628]
+
+[node name="PassengerPositionSensor3D" type="Node3D" parent="Rl/Sensor/Position" unique_id=1993413005]
+script = ExtResource("16_ires5")
+max_distance = 8.0
+metadata/_custom_type_script = "uid://dw5b50ecp081t"
+
+[node name="RivalPositionSensor" type="Node3D" parent="Rl/Sensor/Position" unique_id=46752113]
+script = ExtResource("17_bhoe8")
+debug_lines = false
+metadata/_custom_type_script = "uid://bucxucpvi017r"
+
+[node name="Reward" type="Node3D" parent="Rl" unique_id=775251591 node_paths=PackedStringArray("car_ref")]
+script = ExtResource("18_d2cr6")
+car_ref = NodePath("../AITaxiController")
+
+[node name="isMovingRewardFunction" type="Node3D" parent="Rl/Reward" unique_id=1113032864]
+script = ExtResource("22_fprvm")
+enabled = false
+
+[node name="PickUpAndDropRewardFunction" type="Node3D" parent="Rl/Reward" unique_id=916727881]
+script = ExtResource("19_k1pfa")
+enabled = false
+metadata/_custom_type_script = "uid://csfgeoaq4h2g1"
+
+[node name="DenseNavigationReward" type="Node3D" parent="Rl/Reward" unique_id=1050151161]
+script = ExtResource("23_s2fgk")
+
+[node name="SteeringSmoothnessReward" type="Node3D" parent="Rl/Reward" unique_id=1209521008]
+script = ExtResource("24_smooth")
+weight = 0.2
+
+[node name="WallContactReward" type="Node3D" parent="Rl/Reward" unique_id=58272098]
+script = ExtResource("25_wall")
+
+[node name="TaxiService" type="Node3D" parent="." unique_id=741200101]
+script = ExtResource("20_taxisvc")
+metadata/_custom_type_script = "uid://cv5ic6ba8duew"
+
+[node name="VehicleStateResetter" type="Node" parent="." unique_id=741200102]
+script = ExtResource("21_taxirst")
+metadata/_custom_type_script = "uid://bc0q3uwojqa37"
+
+[connection signal="carrying_changed" from="TaxiService" to="MMT_Visual_Nodes/PlateSwitch" method="_set_plate"]
+[connection signal="passenger_dropped_off" from="TaxiService" to="Rl/AITaxiController" method="_on_service_dropped_off"]
+[connection signal="passenger_picked_up" from="TaxiService" to="Rl/AITaxiController" method="_on_service_picked_up"]
+[connection signal="target_stolen" from="TaxiService" to="Rl/AITaxiController" method="_on_service_target_stolen"]
+
+[editable path="MMT_Visual_Nodes/santana_body"]

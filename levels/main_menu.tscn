@@ -1,0 +1,63 @@
+[gd_scene format=3 uid="uid://b8ap376wivqji"]
+
+[ext_resource type="Script" uid="uid://bfujrdkik8pwq" path="res://levels/main_menu.gd" id="1_mm"]
+
+[node name="MainMenu" type="Control" unique_id=722682002 node_paths=PackedStringArray("train_button", "test_train_button", "player_button", "quit_button")]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_mm")
+train_button = NodePath("CenterContainer/VBoxContainer/ParaTrainButton")
+test_train_button = NodePath("CenterContainer/VBoxContainer/TestTrainButton")
+player_button = NodePath("CenterContainer/VBoxContainer/PlayerButton")
+quit_button = NodePath("CenterContainer/VBoxContainer/QuitButton")
+
+[node name="Background" type="ColorRect" parent="." unique_id=1966734162]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.07, 0.08, 0.11, 1)
+
+[node name="CenterContainer" type="CenterContainer" parent="." unique_id=136727795]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="CenterContainer" unique_id=2020111411]
+layout_mode = 2
+theme_override_constants/separation = 24
+
+[node name="Title" type="Label" parent="CenterContainer/VBoxContainer" unique_id=1491000281]
+layout_mode = 2
+theme_override_font_sizes/font_size = 40
+text = "AutoFollow"
+horizontal_alignment = 1
+
+[node name="ParaTrainButton" type="Button" parent="CenterContainer/VBoxContainer" unique_id=1633176094]
+custom_minimum_size = Vector2(300, 56)
+layout_mode = 2
+text = "开始训练 (ParaTrainScene)"
+
+[node name="TestTrainButton" type="Button" parent="CenterContainer/VBoxContainer" unique_id=1656770141]
+custom_minimum_size = Vector2(300, 56)
+layout_mode = 2
+text = "测试训练 (TestTrainScene)"
+
+[node name="PlayerButton" type="Button" parent="CenterContainer/VBoxContainer" unique_id=1690969588]
+custom_minimum_size = Vector2(300, 56)
+layout_mode = 2
+text = "玩家车辆 (mmt_player_sedan)"
+
+[node name="QuitButton" type="Button" parent="CenterContainer/VBoxContainer" unique_id=249699727]
+custom_minimum_size = Vector2(300, 56)
+layout_mode = 2
+text = "退出游戏"

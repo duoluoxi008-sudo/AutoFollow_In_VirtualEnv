@@ -1,0 +1,64 @@
+[gd_scene format=3 uid="uid://clxg7q048fge7"]
+
+[ext_resource type="Script" uid="uid://csrvics7w1y82" path="res://vehicle/mmt_player_controller.gd" id="1_pjg03"]
+[ext_resource type="Script" uid="uid://b1kwo5htnqcg4" path="res://levels/TrainingArena.gd" id="1_r8q7q"]
+[ext_resource type="PackedScene" uid="uid://c7aaupjhpk06d" path="res://vehicle/VehicleSpawner.tscn" id="2_r8q7q"]
+[ext_resource type="Script" uid="uid://bisjrqw8c3o60" path="res://vehicle/VehicleSpawnManager.gd" id="3_vpr56"]
+[ext_resource type="PackedScene" uid="uid://cwcowjlfvc42a" path="res://vehicle/AI/mmt_ai_sedan.tscn" id="4_o8nfa"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_grnd"]
+albedo_color = Color(0.22, 0.24, 0.28, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_grnd"]
+material = SubResource("StandardMaterial3D_grnd")
+size = Vector3(0.11729038, 0.33117676, 0.20701122)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_grnd"]
+size = Vector3(0.20672798, 0.119384766, 0.12373352)
+
+[sub_resource type="BoxMesh" id="BoxMesh_wo0hr"]
+size = Vector3(10.8758545, 7.8438416, 0.18066406)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_ek7y0"]
+size = Vector3(11.135742, 9.952087, 0.55355144)
+
+[node name="TestTrainingArena" type="Node3D" unique_id=2040108729]
+script = ExtResource("1_r8q7q")
+
+[node name="Ground" type="StaticBody3D" parent="." unique_id=656694037]
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Ground" unique_id=1584478108]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.06931794, -0.3734352, -0.28076196)
+mesh = SubResource("BoxMesh_grnd")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Ground" unique_id=1406236368]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.036349297, -0.29670942, -0.26619077)
+shape = SubResource("BoxShape3D_grnd")
+
+[node name="MMTPlayerController" type="Node" parent="." unique_id=948019595]
+script = ExtResource("1_pjg03")
+
+[node name="Wall" type="StaticBody3D" parent="." unique_id=900642449]
+transform = Transform3D(0.0017244257, 0, 0.99999857, 0, 1, 0, -0.99999857, 0, 0.0017244257, 2.2113562, 0, -0.17609072)
+collision_layer = 2
+collision_mask = 0
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Wall" unique_id=228360989]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.7729676, -0.00050354004, -8.286506)
+mesh = SubResource("BoxMesh_wo0hr")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Wall" unique_id=1476156756]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.8735352, 0.7484436, -8.416664)
+shape = SubResource("BoxShape3D_ek7y0")
+
+[node name="VehicleSpawnManager" type="Node" parent="." unique_id=2004538241 node_paths=PackedStringArray("spawner_root")]
+script = ExtResource("3_vpr56")
+car_scene = ExtResource("4_o8nfa")
+vehicles_per_faction = 1
+spawner_root = NodePath("../PassengerSpawner")
+metadata/_custom_type_script = "uid://bisjrqw8c3o60"
+
+[node name="PassengerSpawner" type="Node3D" parent="." unique_id=1472925872]
+
+[node name="VehicleSpawner" parent="PassengerSpawner" unique_id=1995086507 instance=ExtResource("2_r8q7q")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.13464522, 0, -0.27700365)

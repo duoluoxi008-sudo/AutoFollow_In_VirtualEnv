@@ -3,8 +3,7 @@
 [ext_resource type="Material" uid="uid://di2q53b3aasxk" path="res://materials/m_default3.tres" id="1_g5b5b"]
 [ext_resource type="Material" uid="uid://ccasgnwkxhdun" path="res://materials/m_default.tres" id="2_rqpwr"]
 [ext_resource type="Environment" uid="uid://fu26fprl3d5v" path="res://environments/default_environment.tres" id="3_6h1yx"]
-[ext_resource type="CameraAttributesPhysical" uid="uid://dwd0wmb6shu6" path="res://environments/ca_default_environment.tres" id="4_0h04v"]
-[ext_resource type="PackedScene" uid="uid://dapvv8brm3oxw" path="res://misc/camera_rig.tscn" id="5_k0n1l"]
+[ext_resource type="Script" uid="uid://csrvics7w1y82" path="res://vehicle/mmt_player_controller.gd" id="5_e600y"]
 [ext_resource type="PackedScene" uid="uid://1pn6ha8ckrx5" path="res://vehicle/mmt_sedan.tscn" id="6_g5b5b"]
 [ext_resource type="PackedScene" uid="uid://dljbrvbb6a3p2" path="res://props/truck_town.scn" id="8_r70cy"]
 [ext_resource type="Shader" uid="uid://c85c37npi84us" path="res://shaders/world_space_shader.gdshader" id="9_e600y"]
@@ -27,16 +26,6 @@ auto_exposure_max_exposure_value = 0.46
 [sub_resource type="NavigationMesh" id="NavigationMesh_jdmrl"]
 vertices = PackedVector3Array(-13.889997, 5.5760336, -16.345783, -13.889997, 5.5760336, -13.595783, -11.139997, 5.5760336, -16.095783, -1.1399965, 5.5760336, -16.345783, -0.13999653, 5.5760336, -13.845783, 0.8600035, 5.5760336, -16.095783, 11.360003, 5.5760336, -16.095783, 13.860003, 5.5760336, -13.595783, 13.860003, 5.5760336, -16.345783, -12.639997, 1.8260337, -8.095783, -11.389997, 1.8260337, -8.095783, -11.139997, 1.8260337, -9.095783, -12.639997, 1.8260337, -13.345783, -1.8899965, 1.8260337, -9.095783, -0.8899965, 1.8260337, -13.095783, -1.6399965, 1.8260337, -15.345783, -10.639997, 1.8260337, -15.345783, 11.110003, 1.8260337, -9.095783, 11.360003, 1.8260337, -8.095783, 12.860003, 1.8260337, -8.095783, 12.860003, 1.8260337, -13.095783, 1.8600035, 1.8260337, -9.095783, 10.860003, 1.8260337, -15.095783, 1.6100035, 1.8260337, -15.095783, 0.8600035, 1.8260337, -13.095783, 0.36000347, 1.8260337, -12.345783, -0.38999653, 1.8260337, -12.345783, -0.6399965, 1.8260337, 7.904217, -1.6399965, 1.8260337, 9.154217, -0.38999653, 1.8260337, 12.154217, 0.36000347, 1.8260337, 12.154217, 1.8600035, 1.8260337, 9.154217, 0.6100035, 1.8260337, 7.404217, 0.6100035, 1.8260337, 1.6542168, 1.8600035, 1.8260337, 0.40421677, 1.8600035, 1.8260337, -0.59578323, -0.6399965, 1.8260337, 1.6542168, 0.6100035, 1.8260337, -1.8457832, -0.6399965, 1.8260337, -1.8457832, -1.8899965, 1.8260337, -0.59578323, 6.1100035, 1.8260337, 0.40421677, 6.1100035, 1.8260337, -0.59578323, 0.6100035, 1.8260337, -7.345783, -0.6399965, 1.8260337, -7.345783, -1.8899965, 1.8260337, 0.65421677, -6.1399965, 1.8260337, -0.59578323, -5.8899965, 1.8260337, 0.65421677, -12.639997, 1.8260337, 8.154217, -11.389997, 1.8260337, 8.154217, -11.139997, 1.8260337, 7.154217, -11.139997, 1.8260337, -7.095783, -7.6399965, 1.8260337, 0.65421677, -7.8899965, 1.8260337, -0.59578323, -9.139997, 1.8260337, -1.3457832, -12.639997, 1.8260337, -0.84578323, -10.639997, 1.8260337, -0.59578323, -10.889997, 1.8260337, 0.90421677, -9.139997, 1.8260337, 1.6542168, -12.639997, 1.8260337, 0.90421677, -9.139997, 1.8260337, 7.154217, -9.139997, 1.8260337, -7.095783, -2.3899965, 5.0760336, -1.5957832, -1.6399965, 5.0760336, -2.3457832, -1.6399965, 5.0760336, -6.845783, -2.3899965, 5.0760336, -8.095783, -8.139997, 5.0760336, -8.095783, -8.139997, 5.0760336, -1.8457832, 1.6100035, 5.0760336, -6.845783, 1.6100035, 5.0760336, -2.3457832, 2.3600035, 5.0760336, -1.5957832, 8.110003, 5.0760336, -1.8457832, 8.110003, 5.0760336, -8.095783, 2.3600035, 5.0760336, -8.095783, 9.110003, 1.8260337, -1.3457832, 10.610003, 1.8260337, -0.34578323, 10.860003, 1.8260337, -0.84578323, 11.110003, 1.8260337, -7.095783, 12.860003, 1.8260337, -0.84578323, 9.110003, 1.8260337, -7.095783, -2.6399965, 1.8260337, -1.8457832, -1.8899965, 1.8260337, -2.5957832, -1.8899965, 1.8260337, -6.595783, -2.6399965, 1.8260337, -7.845783, -7.8899965, 1.8260337, -7.845783, -7.8899965, 1.8260337, -2.0957832, 1.8600035, 1.8260337, -6.595783, 1.8600035, 1.8260337, -2.5957832, 2.6100035, 1.8260337, -1.8457832, 7.8600035, 1.8260337, -2.0957832, 7.8600035, 1.8260337, -7.845783, 2.6100035, 1.8260337, -7.845783, 7.8600035, 1.8260337, -0.59578323, 9.110003, 1.8260337, 1.1542168, 12.860003, 1.8260337, 0.90421677, 10.860003, 1.8260337, 0.90421677, 10.860003, 1.8260337, 7.154217, 12.860003, 1.8260337, 8.154217, 11.110003, 1.8260337, 8.154217, 9.110003, 1.8260337, 7.154217, 6.8600035, 5.0760336, 1.4042168, 2.3600035, 5.0760336, 1.4042168, 1.6100035, 5.0760336, 2.1542168, 1.6100035, 5.0760336, 6.904217, 2.3600035, 5.0760336, 8.154217, 8.110003, 5.0760336, 8.154217, 8.110003, 5.0760336, 1.9042168, -1.8899965, 5.0760336, 8.154217, -1.6399965, 5.0760336, 7.404217, -1.8899965, 5.0760336, 1.9042168, -7.1399965, 5.0760336, 1.6542168, -8.139997, 5.0760336, 2.1542168, -8.139997, 5.0760336, 8.154217, -1.8899965, 1.8260337, 2.4042168, -2.6399965, 1.8260337, 1.9042168, -6.8899965, 1.8260337, 1.9042168, -2.1399965, 1.8260337, 7.654217, -1.8899965, 1.8260337, 7.154217, -7.8899965, 1.8260337, 2.6542168, -7.8899965, 1.8260337, 7.654217, 2.3600035, 1.8260337, 1.9042168, 1.8600035, 1.8260337, 2.6542168, 1.8600035, 1.8260337, 6.654217, 2.3600035, 1.8260337, 7.654217, 7.8600035, 1.8260337, 7.654217, 7.8600035, 1.8260337, 2.1542168, -11.139997, 1.8260337, 9.154217, -12.639997, 1.8260337, 13.404217, -1.6399965, 1.8260337, 15.154217, -10.889997, 1.8260337, 15.154217, 10.860003, 1.8260337, 9.154217, 12.860003, 1.8260337, 13.154217, 10.860003, 1.8260337, 15.154217, 1.6100035, 1.8260337, 15.154217, 1.1100035, 5.5760336, 16.154217, -0.13999653, 5.5760336, 13.904217, -0.8899965, 5.5760336, 16.154217, 13.860003, 5.5760336, 16.404217, 13.860003, 5.5760336, 13.654217, 11.360003, 5.5760336, 16.154217, -11.389997, 5.5760336, 16.154217, -13.889997, 5.5760336, 13.654217, -13.889997, 5.5760336, 16.404217)
 polygons = [PackedInt32Array(2, 1, 0), PackedInt32Array(4, 3, 5), PackedInt32Array(8, 7, 6), PackedInt32Array(5, 3, 6), PackedInt32Array(6, 3, 8), PackedInt32Array(10, 9, 11), PackedInt32Array(11, 9, 12), PackedInt32Array(14, 13, 15), PackedInt32Array(15, 13, 16), PackedInt32Array(16, 13, 12), PackedInt32Array(12, 13, 11), PackedInt32Array(18, 17, 19), PackedInt32Array(19, 17, 20), PackedInt32Array(24, 23, 21), PackedInt32Array(21, 23, 22), PackedInt32Array(21, 22, 20), PackedInt32Array(21, 20, 17), PackedInt32Array(25, 24, 21), PackedInt32Array(13, 14, 26), PackedInt32Array(27, 32, 28), PackedInt32Array(28, 32, 31), PackedInt32Array(28, 31, 30), PackedInt32Array(28, 30, 29), PackedInt32Array(35, 34, 33), PackedInt32Array(37, 35, 38), PackedInt32Array(38, 35, 39), PackedInt32Array(39, 35, 33), PackedInt32Array(39, 33, 36), PackedInt32Array(35, 41, 34), PackedInt32Array(34, 41, 40), PackedInt32Array(43, 13, 42), PackedInt32Array(42, 13, 21), PackedInt32Array(21, 13, 26), PackedInt32Array(21, 26, 25), PackedInt32Array(33, 32, 36), PackedInt32Array(36, 32, 27), PackedInt32Array(38, 43, 37), PackedInt32Array(37, 43, 42), PackedInt32Array(44, 39, 36), PackedInt32Array(44, 46, 39), PackedInt32Array(39, 46, 45), PackedInt32Array(49, 48, 47), PackedInt32Array(9, 10, 50), PackedInt32Array(52, 45, 51), PackedInt32Array(51, 45, 46), PackedInt32Array(55, 54, 53), PackedInt32Array(53, 54, 50), PackedInt32Array(50, 54, 9), PackedInt32Array(52, 51, 53), PackedInt32Array(53, 51, 57), PackedInt32Array(53, 57, 55), PackedInt32Array(55, 57, 56), PackedInt32Array(56, 57, 58), PackedInt32Array(58, 57, 49), PackedInt32Array(58, 49, 47), PackedInt32Array(57, 59, 49), PackedInt32Array(50, 60, 53), PackedInt32Array(62, 61, 63), PackedInt32Array(63, 61, 64), PackedInt32Array(64, 61, 66), PackedInt32Array(64, 66, 65), PackedInt32Array(68, 67, 69), PackedInt32Array(69, 67, 72), PackedInt32Array(69, 72, 70), PackedInt32Array(70, 72, 71), PackedInt32Array(75, 74, 73), PackedInt32Array(76, 18, 19), PackedInt32Array(75, 73, 77), PackedInt32Array(77, 73, 76), PackedInt32Array(77, 76, 19), PackedInt32Array(73, 78, 76), PackedInt32Array(80, 79, 81), PackedInt32Array(81, 79, 82), PackedInt32Array(82, 79, 84), PackedInt32Array(82, 84, 83), PackedInt32Array(86, 85, 87), PackedInt32Array(87, 85, 90), PackedInt32Array(87, 90, 88), PackedInt32Array(88, 90, 89), PackedInt32Array(41, 91, 40), PackedInt32Array(40, 91, 92), PackedInt32Array(94, 93, 92), PackedInt32Array(92, 93, 95), PackedInt32Array(95, 93, 96), PackedInt32Array(96, 97, 95), PackedInt32Array(94, 92, 74), PackedInt32Array(74, 92, 73), PackedInt32Array(73, 92, 91), PackedInt32Array(95, 98, 92), PackedInt32Array(101, 100, 99), PackedInt32Array(102, 101, 103), PackedInt32Array(103, 101, 99), PackedInt32Array(103, 99, 105), PackedInt32Array(103, 105, 104), PackedInt32Array(107, 106, 108), PackedInt32Array(108, 106, 109), PackedInt32Array(109, 106, 110), PackedInt32Array(110, 106, 111), PackedInt32Array(112, 114, 113), PackedInt32Array(116, 115, 112), PackedInt32Array(112, 115, 114), PackedInt32Array(114, 115, 117), PackedInt32Array(117, 115, 118), PackedInt32Array(120, 119, 121), PackedInt32Array(121, 119, 122), PackedInt32Array(122, 119, 124), PackedInt32Array(122, 124, 123), PackedInt32Array(48, 125, 47), PackedInt32Array(47, 125, 126), PackedInt32Array(29, 127, 28), PackedInt32Array(28, 127, 128), PackedInt32Array(28, 128, 126), PackedInt32Array(28, 126, 125), PackedInt32Array(97, 96, 129), PackedInt32Array(129, 96, 130), PackedInt32Array(30, 31, 132), PackedInt32Array(132, 31, 129), PackedInt32Array(132, 129, 131), PackedInt32Array(131, 129, 130), PackedInt32Array(135, 134, 133), PackedInt32Array(138, 137, 136), PackedInt32Array(141, 140, 139), PackedInt32Array(133, 138, 136), PackedInt32Array(141, 139, 135), PackedInt32Array(133, 136, 135), PackedInt32Array(135, 136, 141)]
-
-[sub_resource type="CameraAttributesPhysical" id="CameraAttributesPhysical_wl6ck"]
-resource_local_to_scene = true
-auto_exposure_enabled = true
-auto_exposure_scale = 0.47
-auto_exposure_speed = 2.85
-frustum_focal_length = 15.04
-exposure_aperture = 13.27
-auto_exposure_min_exposure_value = 0.0
-auto_exposure_max_exposure_value = 0.46
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_l4srq"]
 render_priority = 0
@@ -340,12 +329,6 @@ spot_range = 12.917
 spot_attenuation = 2.19
 spot_angle = 36.67
 
-[node name="Camera3D" type="Camera3D" parent="." unique_id=964535911]
-transform = Transform3D(1, 0, 0, 0, 0.4010687, 0.91604805, 0, -0.91604805, 0.4010687, -0.010672092, 21.217196, 12.316249)
-environment = ExtResource("3_6h1yx")
-attributes = ExtResource("4_0h04v")
-fov = 77.17079
-
 [node name="NavigationLink3D" type="NavigationLink3D" parent="." unique_id=1152213553]
 transform = Transform3D(0.031341024, 0, 0.99950874, 0, 1, 0, -0.99950874, 0, 0.031341024, 6.6863194, 4.6868563, 5.3593216)
 visible = false
@@ -358,16 +341,12 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.3841858e-07, 2.861023e-06,
 visible = false
 navigation_mesh = SubResource("NavigationMesh_jdmrl")
 
-[node name="CameraRig" parent="." unique_id=426980195 node_paths=PackedStringArray("cam_target") instance=ExtResource("5_k0n1l")]
-cam_target = NodePath("../MMTSedan")
-
-[node name="Camera3D" parent="CameraRig/SpringArm3D" parent_id_path=PackedInt32Array(426980195, 635278746) index="0" unique_id=1863717784]
-attributes = SubResource("CameraAttributesPhysical_wl6ck")
-current = true
-fov = 77.17079
-
 [node name="MMTSedan" parent="." unique_id=1500364419 instance=ExtResource("6_g5b5b")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12.130791, 6.6739216, 22.261158)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.5347862, 13.978586)
+
+[node name="MMTPlayerController" type="Node" parent="." unique_id=1928589982 node_paths=PackedStringArray("target_vehicle")]
+script = ExtResource("5_e600y")
+target_vehicle = NodePath("../MMTSedan")
 
 [node name="truck_town" parent="." unique_id=1601628804 instance=ExtResource("8_r70cy")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20.258804, 2.4297676, -499.80914)
@@ -1100,5 +1079,3 @@ collision_mask = 31
 transform = Transform3D(0.9870748, 0, -0.16026022, 0, 1, 0, 0.16026022, 0, 0.9870748, 12.511448, 0.6605394, -73.73282)
 collision_layer = 8
 collision_mask = 31
-
-[editable path="CameraRig"]

@@ -1,0 +1,23 @@
+[project]
+name = "rl"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "duoluoxi008-sudo", email = "16596545+fallen-west@user.noreply.gitee.com" }
+]
+requires-python = ">=3.11.13"
+dependencies = [
+    "godot-rl>=0.8.0",
+    "gymnasium>=1.3.0",
+    "numpy>=2.4.6",
+    "stable-baselines3>=2.9.0",
+    "torch>=2.14.0",
+]
+
+[project.scripts]
+rl = "rl:main"
+
+[build-system]
+requires = ["uv_build>=0.12.0,<0.13.0"]
+build-backend = "uv_build"

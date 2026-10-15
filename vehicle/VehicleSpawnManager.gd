@@ -1,0 +1,401 @@
+extends Node
+class_name VehicleSpawnManager
+
+# ============================================================================
+# VehicleSpawnManager —— 车队/阵营车辆生成总管
+#
+# 负责：
+#   - 收集场景里的 VehicleSpawner（组 "vehicle_spawners"）。
+#   - 按阵营（faction_list）生成车队，给每辆车写入 company_id（公司/阵营），
+#     从而让 RivalSensor / 同车队不互斥派单 生效。
+#   - 记录已生成的车辆，并提供 reset() 供 RL 回合清场。
+#
+# 阵营说明：
+#   - faction_list: Dictionary[int, String]  id -> 名字（如 {0:"玩家", 1:"电脑"}）。
+#   - 同 id = 同一车队（队友），不同 id = 对手。
+#   - player_fight 时在 _ready 自动 add_player_faction_list() 追加一个"玩家"阵营。
+# ============================================================================
+
+## 车队生成完成信号。
+##
+## 为什么需要它：`auto_spawn` 走的是 `call_deferred("_spawn_fleet")`，也就是在
+## 当前帧的 idle 处理末尾才真正实例化车辆。而 godot_rl 的 `Sync._ready()` 在
+## `await get_parent().ready` 之后就立刻 `_get_agents()` 扫 AGENT 组——那一刻车
+## 还没生成，扫到空数组，于是 Sync 跳过连接（`if agents_training.size() > 0` 不成立），
+## 表现为"不暂停、不等 Python"。
+##
+## 解法见 `vehicle/AI/sync_taxi.gd`（Sync 的子类）：它在 `_initialize()` 之前等这个
+## 信号，保证扫 AGENT 组时车已就位。插件本体 `addons/godot_rl_agents/sync.gd` 不改。
+signal fleet_ready
+
+## 车辆场景（要生成的车，通常是 res://vehicle/mmt_sedan.tscn）
+@export var car_scene: PackedScene
+## 阵营/公司列表：id -> 名字（如 {0:"玩家", 1:"电脑"}）
+@export var faction_list: Dictionary[int, String] = {}
+## 每个阵营生成多少辆车（用于 auto_spawn）
+@export_range(1, 30) var vehicles_per_faction: int = 3
+## 是否在 _ready 自动收集生成点
+@export var auto_collect_spawners: bool = true
+## 车辆生成点所在的**分组节点**（在检视器里把 arena 里的 "SpawnerMark/VehicleSpawner" 拖进来）。
+## 收集就是 `spawner_root.get_children()` + 类型判定：每个 arena 各拖自己的那个，
+## 天然只收到本场地的生成点，不需要任何全局组。
+## 留空时的兜底：先扫本节点子树，再从父节点往下按类型递归找。
+##
+## ⚠️ 必须是 `Node3D`（不能是普通 `Node`）：`Node3D` 的 `global_transform` 只在
+## **直接父级也是 Node3D** 时逐级相乘，中间夹普通 `Node` 会把子节点的世界坐标截断
+## （"移动 arena 出生点不跟着走"就是这么来的）。所以场景里这个分组节点也必须是 Node3D。
+@export var spawner_root: Node3D
+## 本场地（arena）的 AI 超参数集。
+##
+## ⚠️ 必须**按 arena 作用域**引用（和 spawner_root 同理），不要用全局组
+## `AIParameter.GROUP` —— 多 arena 同进程时全局组会串场地（见 sync_taxi.gd 的说明）。
+## 留空时会在本管理器的同级节点里自动找一个 AIParameter。
+@export var ai_parameter: AIParameter
+## 是否在 _ready 自动生成车队
+@export var auto_spawn: bool = true
+
+@export_group("生成朝向")
+## 生成车辆时是否给一个**随机朝向**。
+## 只绕世界 Y 轴随机偏航：位置/高度仍严格用生成点，车也不会被转歪（俯仰/侧倾不变）。
+## 同一个开关也管"回合重置重定位"（claim_spawn_transform），让每回合的初始朝向也不同；
+## 两者的随机口径完全一致（同一个 roll_spawn_yaw_offset()）。
+@export var randomize_spawn_yaw: bool = true
+## 随机偏航范围（度，[min, max]）。默认 ±180 全向随机；
+## 如果出生点多在窄路上、全向随机容易一开始就顶墙，可以收窄成 [-45, 45] 之类。
+@export_range(-180.0, 180.0) var spawn_yaw_range_min_deg: float = -180.0
+@export_range(-180.0, 180.0) var spawn_yaw_range_max_deg: float = 180.0
+
+## 收集到的生成点（组 "vehicle_spawners"）
+var spawners: Array[VehicleSpawner] = []
+## 已生成的车辆
+#expose
+var vehicles: Array[Node3D] = []
+## 本次生成中成功写入 AI 参数的车辆数（仅用于启动日志）
+var _params_applied_count: int = 0
+
+# --- 生成点占用表（车辆侧的"对象池"）---
+## VehicleSpawner -> 当前占用它的车辆。
+##
+## 为什么需要它：车辆实例是常驻的（回合重置只就地传送，绝不 queue_free/重建，
+## 因为重建会破坏 godot_rl 的 agent 登记，见 vehicle/AI/sync_taxi.gd 的说明）。
+## 所以"对象池"在车辆侧就等于这张占用表：
+##   回合重置时先归还自己占用的点，再随机领取一个没被别的车占用的点。
+var _pose_owner: Dictionary = {}
+
+## 判断某个生成点是否"物理上已经空出来"的距离阈值（米）。
+## 生成点被某辆车登记占用、但那辆车已经开走时，可以把这个点让给别人。
+@export var spawn_point_safe_radius: float = 3.0
+
+## 玩家对战电脑开关：开启后自动追加一个"玩家"阵营
+var player_fight: bool = false
+
+
+func _ready() -> void:
+	add_to_group("vehicle_spawn_manager")
+	# 让 sync.gd 的 call 广播能把 get_env_stats 查询送到本管理器（它不是 AGENT 节点）
+	add_to_group("rl_stats_providers")
+	if player_fight:
+		add_player_faction_list()
+	if auto_collect_spawners:
+		call_deferred("_collect_spawners")
+	if auto_spawn:
+		call_deferred("_spawn_fleet")
+
+
+## 收集生成点（deferred 调用确保各生成点已 ready）。
+##
+## 收集来源是**场景内的分组节点**（spawner_root，在检视器里拖），不是全局组：
+## 多 arena 同进程时，全局组会把别的场地的生成点也收进来，
+## `_pose_owner` 记账就会串场地（车被传送到别的 arena 的出生点）。
+func _collect_spawners() -> void:
+	spawners.clear()
+
+	if spawner_root != null and is_instance_valid(spawner_root):
+		for c in spawner_root.get_children():
+			if c is VehicleSpawner and is_instance_valid(c):
+				spawners.append(c as VehicleSpawner)
+
+	if not spawners.is_empty():
+		return
+
+	# 兜底 1：生成点直接挂在本管理器下面（有些场景这么摆）
+	for child in get_children():
+		if child is VehicleSpawner and is_instance_valid(child):
+			spawners.append(child as VehicleSpawner)
+	if not spawners.is_empty():
+		return
+
+	# 兜底 2：从父节点往下按类型递归找（仍然不越出本场地的父节点）。
+	# owned 必须显式 false：运行时 instantiate 的节点没有 owner，owned=true 会全漏。
+	var base := get_parent()
+	if base != null:
+		for n in base.find_children("*", "VehicleSpawner", true, false):
+			if n is VehicleSpawner and is_instance_valid(n):
+				spawners.append(n as VehicleSpawner)
+	if spawners.is_empty():
+		push_warning(
+			"VehicleSpawnManager: 没有收集到任何 VehicleSpawner。"
+			+ "请在检视器里把生成点所在的分组节点拖到 spawner_root 上。"
+		)
+
+
+## 掷一次"随机朝向"的偏航偏移（弧度）。
+## 关掉开关、或范围非法（min == max）时返回 0.0，等于完全沿用生成点朝向。
+##
+## 用的是全局 RNG：godot_rl 的 Sync 会用 `--env_seed` 调 `seed()`，
+## 所以（同 seed 下）朝向序列是可复现的。
+func roll_spawn_yaw_offset() -> float:
+	if not randomize_spawn_yaw:
+		return 0.0
+	var lo: float = minf(spawn_yaw_range_min_deg, spawn_yaw_range_max_deg)
+	var hi: float = maxf(spawn_yaw_range_min_deg, spawn_yaw_range_max_deg)
+	if is_equal_approx(lo, hi):
+		return deg_to_rad(lo)
+	return deg_to_rad(randf_range(lo, hi))
+
+
+## 在给定位姿上叠加一次随机偏航（绕世界 Y 轴左乘，不破坏原有俯仰/侧倾）。
+## 生成车辆与回合重置重定位共用同一套口径。
+func _with_random_yaw(pose: Transform3D) -> Transform3D:
+	var yaw := roll_spawn_yaw_offset()
+	if is_zero_approx(yaw):
+		return pose
+	var out := pose
+	out.basis = Basis(Vector3.UP, yaw) * pose.basis
+	return out
+
+
+## 按每个阵营生成 vehicles_per_faction 辆车。
+## 结束时一定 emit fleet_ready（包括异常路径），否则等待它的 Sync 子类会一直挂住。
+func _spawn_fleet() -> void:
+	if car_scene == null:
+		push_warning("VehicleSpawnManager: car_scene 未设置，无法生成车队。")
+		fleet_ready.emit()
+		return
+	for fid in _factions():
+		for i in range(vehicles_per_faction):
+			_spawn_one(int(fid))
+	if _params_applied_count > 0:
+		print("[VehicleSpawnManager] 已按阵营把 AI 参数写入 %d 辆车。" % _params_applied_count)
+	fleet_ready.emit()
+
+
+## 手动生成一辆指定阵营的车；返回实例或 null（无可用的生成点）。
+func spawn_vehicle(faction_id: int) -> Node3D:
+	return _spawn_one(faction_id)
+
+
+func _spawn_one(faction_id: int) -> Node3D:
+	var s := _pick_free_spawner()
+	if s == null:
+		push_warning("VehicleSpawnManager: 没有空闲的 VehicleSpawner。")
+		return null
+	# 随机朝向在这里掷、并交给 spawn_vehicle 一起摆位：
+	# 必须在 VehicleSpawner 记录出生位姿**之前**定好，否则记录的出生朝向和实际朝向不一致
+	# （回合重置会按记录的位姿把车转回去）。
+	var v := s.spawn_vehicle(car_scene, faction_id, self, roll_spawn_yaw_offset())
+	if v != null:
+		vehicles.append(v)
+		# 参数写入必须放在 spawn_vehicle() 之后：add_child() 会同步触发整棵子树的
+		# _ready()（见 VehicleSpawner.spawn_vehicle 的说明），所以此刻控制器上的
+		# taxi_service 等节点引用已经解析好了 —— 否则那些 setter 会写空引用。
+		_apply_ai_parameters(v, faction_id)
+		# 初始出生点也要登记占用：否则第一次 Python reset 时，
+		# 别的车可能"随机"挑中一辆还停在这里的车的位置。
+		_pose_owner[s] = v
+		v.tree_exited.connect(func() -> void:
+			vehicles.erase(v)
+			_release_spawns_of(v)
+		)
+	return v
+
+
+# ----------------------------------------------------------------------------
+# AI 超参数下发（生成时按阵营写入）
+# ----------------------------------------------------------------------------
+## 把本场地的 AI 超参数按阵营写入刚生成的车。
+##
+## 为什么在这里做、而不是靠编辑器里的「一键同步到所有AI节点」：
+## 车辆是运行时 instantiate 的，编辑器同步根本看不到它们；而 AIParameterEntry
+## 的字段只有真正写到节点上才生效（apply_to 只写目标上存在的同名属性）。
+##
+## 遍历范围 = 车辆子树里所有 AI 相关节点（控制器 / 奖励函数 / 传感器 / 管理器），
+## 与 AIParameter._is_ai_node 的判定保持一致。
+func _apply_ai_parameters(vehicle: Node3D, faction_id: int) -> void:
+	var params := _resolve_ai_parameter()
+	if params == null:
+		return
+	var entry := params.get_entry_for_company(faction_id)
+	if entry == null:
+		return
+	var applied := 0
+	for n in _collect_ai_nodes(vehicle):
+		applied += entry.apply_to(n)
+	if applied > 0:
+		_params_applied_count += 1
+
+
+## 取本场地的 AIParameter：优先用检视器里拖的引用，否则在同级节点里找一个。
+func _resolve_ai_parameter() -> AIParameter:
+	if ai_parameter != null and is_instance_valid(ai_parameter):
+		return ai_parameter
+	var p := get_parent()
+	if p != null:
+		for c in p.get_children():
+			if c is AIParameter and is_instance_valid(c):
+				return c as AIParameter
+	return null
+
+
+## 收集车辆子树里所有 AI 相关节点（不含 vehicle 自身）。
+## owned 必须显式传 false：运行时 instance 出来的节点没有 owner，owned=true 会全漏。
+##
+## ⚠️ TaxiServiceComponent 必须在列表里：接送判定（pickup_radius /
+## dropoff_radius / stop_speed_threshold）是它在 _try_pickup() 里用的，
+## 而这些字段同时定义在 AIParameterEntry 上。漏了它就等于那几个字段是死旋钮 ——
+## 面板里改了没用，运行时永远是车场景里的默认值（2.0 m / 2.5 m / 1.5 m/s）。
+func _collect_ai_nodes(vehicle: Node3D) -> Array[Node]:
+	var out: Array[Node] = []
+	for n in vehicle.find_children("*", "", true, false):
+		if n is AIController3D or n is RewardFunction3D or n is ISensor3D \
+				or n is SensorManager or n is RewardManager or n is TaxiServiceComponent:
+			out.append(n)
+	return out
+
+
+# ----------------------------------------------------------------------------
+# 生成点占用：回合重置时的"归还 + 随机领取"
+# ----------------------------------------------------------------------------
+## 为 vehicle 领取一个"当前没被别的车占用"的随机生成点，返回它的全局位姿。
+##
+## - 先归还 vehicle 自己占用的点，保证候选里一定有它原来的位置；
+## - 候选 = 没有任何车辆登记占用的点 + 原占用车已开远（超过 spawn_point_safe_radius）的点；
+## - 同一个点同一时刻只会有一个占用者，所以不会出现两辆车叠在同一个点；
+## - 一个空闲点都没有时返回 fallback（调用方传"自己的出生位姿"），避免被传到原点。
+## - 返回的位姿会叠加一次随机偏航（randomize_spawn_yaw 开着时），
+##   让每回合的初始朝向也不同；位置/高度仍严格用生成点。
+#expose
+func claim_spawn_transform(vehicle: Node3D, fallback: Transform3D) -> Transform3D:
+	_release_spawns_of(vehicle)
+
+	var free: Array[VehicleSpawner] = []
+	for s in spawners:
+		if s == null or not is_instance_valid(s):
+			continue
+		var owner: Variant = _pose_owner.get(s)
+		if owner == null or not is_instance_valid(owner):
+			free.append(s)
+			continue
+		if owner == vehicle:
+			free.append(s)
+			continue
+		# 登记占用者已经开走 → 这个点物理上已经空了，可以让出来。
+		var owner_node := owner as Node3D
+		if owner_node != null and is_instance_valid(owner_node) \
+				and owner_node.global_position.distance_to(s.global_position) > spawn_point_safe_radius:
+			free.append(s)
+
+	if free.is_empty():
+		return fallback
+
+	var pick: VehicleSpawner = free[randi_range(0, free.size() - 1)]
+	_pose_owner[pick] = vehicle
+	return _with_random_yaw(pick.global_transform)
+
+
+## 归还 vehicle 占用的所有生成点。
+func _release_spawns_of(vehicle: Node3D) -> void:
+	for s in _pose_owner.keys():
+		var owner: Variant = _pose_owner[s]
+		if owner == vehicle or owner == null or not is_instance_valid(owner):
+			_pose_owner.erase(s)
+
+
+## 当前没有被任何车辆登记占用的生成点数量。
+func free_spawner_count() -> int:
+	var count := 0
+	for s in spawners:
+		if s == null or not is_instance_valid(s):
+			continue
+		var owner: Variant = _pose_owner.get(s)
+		if owner == null or not is_instance_valid(owner):
+			count += 1
+	return count
+
+
+func _pick_free_spawner() -> VehicleSpawner:
+	for s in spawners:
+		if s != null and is_instance_valid(s) and not s.spawned:
+			return s
+	return null
+
+
+## 返回需要生成车辆的阵营 id 列表；无阵营定义时默认 [0]。
+func _factions() -> Array:
+	var keys: Array = faction_list.keys()
+	keys.sort()
+	if keys.is_empty():
+		return [0]
+	return keys
+
+
+## 追加一个"玩家"阵营（id 取当前最大 id + 1）。
+func add_player_faction_list() -> void:
+	var player := len(faction_list.keys())
+	faction_list[player] = "玩家"
+
+
+## 清场重建车队：queue_free 旧车并释放所有生成点。
+##
+## ⚠️ 训练路径**不要用**这个方法：重建出来的实例不在 godot_rl 的 agents_training
+## 登记里（见 vehicle/AI/sync_taxi.gd），会直接破坏训练。RL 回合重置走的是
+## claim_spawn_transform() 的"就地传送"，车辆实例不销毁。
+func reset() -> void:
+	for v in vehicles:
+		if v != null and is_instance_valid(v):
+			v.queue_free()
+	vehicles.clear()
+	_pose_owner.clear()
+	for s in spawners:
+		if s != null and is_instance_valid(s):
+			s.reset_spawn_state()
+
+
+# ----------------------------------------------------------------------------
+# Python 训练侧接口
+# ----------------------------------------------------------------------------
+## 上帝视角统计，供 Python 侧确认生成是否正常。
+## 通过 sync 的 call 消息调用：env.call("get_env_stats")
+func get_env_stats() -> Dictionary:
+	var per_company := {}
+	for v in vehicles:
+		if v == null or not is_instance_valid(v):
+			continue
+		# company_id 写在车内的 TaxiServiceComponent 上（见 VehicleSpawner._set_faction），
+		# 旧路径也可能写在 AITaxiController 上，所以两者都找一遍。
+		var svc: TaxiServiceComponent = TaxiServiceComponent.find_in_subtree(v)
+		var c: int = -1
+		if svc != null:
+			c = svc.company_id
+		else:
+			var ctrl := _find_controller(v)
+			c = ctrl.company_id if ctrl != null else -1
+		per_company[c] = int(per_company.get(c, 0)) + 1
+	return {
+		"vehicles_alive": vehicles.size(),
+		"companies": per_company.size(),
+		"free_spawners": free_spawner_count(),
+		"spawn_points": spawners.size(),
+		"occupied_spawn_points": _pose_owner.size(),
+	}
+
+
+## 递归查找车辆子树里的 AITaxiController。
+func _find_controller(node: Node) -> AITaxiController:
+	if node is AITaxiController:
+		return node as AITaxiController
+	for child in node.get_children():
+		var r := _find_controller(child)
+		if r != null:
+			return r
+	return null

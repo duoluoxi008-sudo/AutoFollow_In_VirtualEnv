@@ -1,0 +1,164 @@
+[gd_scene format=3 uid="uid://dffh46qytpr4u"]
+
+[ext_resource type="PackedScene" uid="uid://dljbrvbb6a3p2" path="res://props/truck_town.scn" id="1_xqamk"]
+[ext_resource type="PackedScene" uid="uid://df0tumtx47yhg" path="res://Passenger/PassengerSpawner.tscn" id="2_n5es4"]
+[ext_resource type="PackedScene" uid="uid://das0cg45pddn8" path="res://Passenger/PassengerDestination.tscn" id="3_n5es4"]
+[ext_resource type="PackedScene" uid="uid://c7aaupjhpk06d" path="res://vehicle/VehicleSpawner.tscn" id="3_oruba"]
+[ext_resource type="Script" uid="uid://bve6okfsudmei" path="res://Passenger/PassengerManager.gd" id="4_gey33"]
+[ext_resource type="Script" uid="uid://bisjrqw8c3o60" path="res://vehicle/VehicleSpawnManager.gd" id="6_oruba"]
+[ext_resource type="PackedScene" uid="uid://cwcowjlfvc42a" path="res://vehicle/AI/mmt_ai_sedan.tscn" id="7_atcgi"]
+[ext_resource type="Script" uid="uid://c7hogotacbyc8" path="res://misc/camera_toggle.gd" id="9_ctog"]
+[ext_resource type="Script" uid="uid://dvhny3k8wsu0v" path="res://vehicle/AI/Parameter/AIParameter.gd" id="10_nx2wb"]
+[ext_resource type="Script" uid="uid://bq0cp66txq3og" path="res://vehicle/AI/Parameter/AIParameterEntry.gd" id="11_nx2wb"]
+[ext_resource type="Script" uid="uid://b1kwo5htnqcg4" path="res://levels/TrainingArena.gd" id="12_arena"]
+
+[sub_resource type="Resource" id="Resource_8uxbe"]
+script = ExtResource("11_nx2wb")
+company_id = 0
+
+[sub_resource type="Resource" id="Resource_jknlw"]
+script = ExtResource("11_nx2wb")
+company_id = 1
+metadata/_custom_type_script = "uid://bq0cp66txq3og"
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_ek7y0"]
+
+[node name="TrainScene" type="Node3D" unique_id=503998264]
+script = ExtResource("12_arena")
+
+[node name="truck_town" parent="." unique_id=1601628804 instance=ExtResource("1_xqamk")]
+
+[node name="SpawnerMark" type="Node3D" parent="." unique_id=849511747]
+
+[node name="PassengerSpawner" type="Node3D" parent="SpawnerMark" unique_id=491911766]
+
+[node name="PassengerSpawner" parent="SpawnerMark/PassengerSpawner" unique_id=508315875 instance=ExtResource("2_n5es4")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 38.18097, 4.206859, -9.184102)
+
+[node name="PassengerSpawner2" parent="SpawnerMark/PassengerSpawner" unique_id=444045125 instance=ExtResource("2_n5es4")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6.080949, 6.899186, 4.1252713)
+
+[node name="PassengerSpawner3" parent="SpawnerMark/PassengerSpawner" unique_id=1931566788 instance=ExtResource("2_n5es4")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 50.00268, 9.08007, -69.42043)
+
+[node name="PassengerSpawner4" parent="SpawnerMark/PassengerSpawner" unique_id=1379638540 instance=ExtResource("2_n5es4")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 24.341806, 9.08007, -60.724358)
+
+[node name="PassengerSpawner5" parent="SpawnerMark/PassengerSpawner" unique_id=1625858437 instance=ExtResource("2_n5es4")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -64.32773, -2.257595, -10.280159)
+
+[node name="PassengerSpawner6" parent="SpawnerMark/PassengerSpawner" unique_id=2141109617 instance=ExtResource("2_n5es4")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -117.32782, 3.1530886, -58.379684)
+
+[node name="VehicleSpawner" type="Node3D" parent="SpawnerMark" unique_id=300086737]
+
+[node name="VehicleSpawner" parent="SpawnerMark/VehicleSpawner" unique_id=1265933331 instance=ExtResource("3_oruba")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 21.43201, 4.407094, -10.507429)
+
+[node name="VehicleSpawner4" parent="SpawnerMark/VehicleSpawner" unique_id=2064603404 instance=ExtResource("3_oruba")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 38.31525, 9.230716, -78.567345)
+
+[node name="VehicleSpawner2" parent="SpawnerMark/VehicleSpawner" unique_id=235856899 instance=ExtResource("3_oruba")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -70.484085, -1.6117764, -10.507429)
+
+[node name="VehicleSpawner3" parent="SpawnerMark/VehicleSpawner" unique_id=2094535202 instance=ExtResource("3_oruba")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -122.468704, 3.3222713, -42.286064)
+
+[node name="VehicleSpawner5" parent="SpawnerMark/VehicleSpawner" unique_id=562811968 instance=ExtResource("3_oruba")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -26.850967, 3.3222713, -86.40765)
+
+[node name="VehicleSpawner6" parent="SpawnerMark/VehicleSpawner" unique_id=875096252 instance=ExtResource("3_oruba")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -100.99695, 3.7429304, -67.977875)
+
+[node name="VehicleSpawner7" parent="SpawnerMark/VehicleSpawner" unique_id=1379847609 instance=ExtResource("3_oruba")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -100.99695, 0.05256939, -11.892655)
+
+[node name="VehicleSpawner8" parent="SpawnerMark/VehicleSpawner" unique_id=1558177864 instance=ExtResource("3_oruba")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6.427596, 5.063199, -46.665806)
+
+[node name="Destination" type="Node3D" parent="." unique_id=872121538]
+
+[node name="PassengerDestination" parent="Destination" unique_id=1900287442 instance=ExtResource("3_n5es4")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -19.555767, 6.9346027, 5.483537)
+
+[node name="PassengerDestination2" parent="Destination" unique_id=572317707 instance=ExtResource("3_n5es4")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -80.27905, 13.9789915, -54.36772)
+
+[node name="PassengerDestination3" parent="Destination" unique_id=673919485 instance=ExtResource("3_n5es4")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -13.211675, 5.255331, -53.35496)
+
+[node name="PassengerDestination4" parent="Destination" unique_id=1742641678 instance=ExtResource("3_n5es4")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 23.782103, -1.9241648, 19.599472)
+
+[node name="PassengerDestination5" parent="Destination" unique_id=1955498740 instance=ExtResource("3_n5es4")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -54.74275, -2.297413, 4.1325674)
+
+[node name="PassengerDestination6" parent="Destination" unique_id=983252485 instance=ExtResource("3_n5es4")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -85.300766, -2.297413, -22.903011)
+
+[node name="PassengerDestination7" parent="Destination" unique_id=1757580091 instance=ExtResource("3_n5es4")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -115.05615, 3.1691513, -25.078123)
+
+[node name="PassengerDestination8" parent="Destination" unique_id=660296179 instance=ExtResource("3_n5es4")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -22.726019, 2.5092278, -86.72673)
+
+[node name="PassengerManager" type="Node3D" parent="." unique_id=9181188 node_paths=PackedStringArray("spawner_root", "destination_root")]
+script = ExtResource("4_gey33")
+spawner_root = NodePath("../SpawnerMark/PassengerSpawner")
+destination_root = NodePath("../Destination")
+max_number = 8
+metadata/_custom_type_script = "uid://bve6okfsudmei"
+
+[node name="VehicleSpawnManager" type="Node3D" parent="." unique_id=625960742 node_paths=PackedStringArray("spawner_root")]
+script = ExtResource("6_oruba")
+car_scene = ExtResource("7_atcgi")
+faction_list = Dictionary[int, String]({
+0: "公司0",
+1: "公司1"
+})
+spawner_root = NodePath("../SpawnerMark/VehicleSpawner")
+metadata/_custom_type_script = "uid://bisjrqw8c3o60"
+
+[node name="CameraToggle" type="Node" parent="." unique_id=1108270915]
+script = ExtResource("9_ctog")
+
+[node name="AIParameter" type="Node" parent="." unique_id=500785847 groups=["AIParameter"]]
+script = ExtResource("10_nx2wb")
+parameters = Array[ExtResource("11_nx2wb")]([SubResource("Resource_8uxbe"), SubResource("Resource_jknlw")])
+metadata/_custom_type_script = "uid://dvhny3k8wsu0v"
+
+[node name="Wall" type="StaticBody3D" parent="." unique_id=1298777988]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 77.575066, -11.489001, 0)
+collision_layer = 2
+collision_mask = 16511
+
+[node name="Collsionshape" type="CollisionShape3D" parent="Wall" unique_id=61978166]
+transform = Transform3D(1, 0, 0, 0, 100, 0, 0, 0, 200, 0, 0, -32.14409)
+shape = SubResource("BoxShape3D_ek7y0")
+
+[node name="Wall3" type="StaticBody3D" parent="." unique_id=1357619586]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 5.021656, -11.489001, 50.309525)
+collision_layer = 2
+collision_mask = 16511
+
+[node name="Collsionshape" type="CollisionShape3D" parent="Wall3" unique_id=1771078908]
+transform = Transform3D(1, 0, 0, 0, 100, 0, 0, 0, 250, 0, 0, -32.14409)
+shape = SubResource("BoxShape3D_ek7y0")
+
+[node name="Wall5" type="StaticBody3D" parent="." unique_id=1406342339]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 5.021656, -11.489001, -120.997955)
+collision_layer = 2
+collision_mask = 16511
+
+[node name="Collsionshape" type="CollisionShape3D" parent="Wall5" unique_id=52723597]
+transform = Transform3D(1, 0, 0, 0, 100, 0, 0, 0, 250, 0, 0, -32.14409)
+shape = SubResource("BoxShape3D_ek7y0")
+
+[node name="Wall4" type="StaticBody3D" parent="." unique_id=353476616]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -140.91957, -11.489001, 0)
+collision_layer = 2
+collision_mask = 16511
+
+[node name="Collsionshape" type="CollisionShape3D" parent="Wall4" unique_id=1464879521]
+transform = Transform3D(1, 0, 0, 0, 100, 0, 0, 0, 200, 0, 0, -32.14409)
+shape = SubResource("BoxShape3D_ek7y0")

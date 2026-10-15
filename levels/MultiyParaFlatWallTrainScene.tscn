@@ -1,0 +1,38 @@
+[gd_scene format=3 uid="uid://d27dokc5yvhte"]
+
+[ext_resource type="Script" uid="uid://clh3p4osx4i55" path="res://misc/free_fly_camera.gd" id="1_njq35"]
+[ext_resource type="Script" uid="uid://dgty4hy4npql1" path="res://vehicle/AI/sync_taxi.gd" id="2_vqn4r"]
+[ext_resource type="PackedScene" uid="uid://byhx7r0f7k5v3" path="res://levels/MultiyFlatWallTrainArena.tscn" id="3_lkmdw"]
+[ext_resource type="PackedScene" uid="uid://drrqf7h17isq6" path="res://levels/MultiyFlatWallTrainArena_1.tscn" id="4_wos76"]
+[ext_resource type="PackedScene" uid="uid://i82ju1bgp0so" path="res://levels/MultiyFlatWallTrainArena_2.tscn" id="5_rfs72"]
+[ext_resource type="PackedScene" uid="uid://dhohe1lr3sote" path="res://levels/MultiyFlatWallTrainArena_3.tscn" id="6_cu0cw"]
+
+[node name="ParaFlatTrainScene" type="Node3D" unique_id=1721718675]
+
+[node name="FreeFlyCamera" type="Camera3D" parent="." unique_id=350470744]
+transform = Transform3D(0.79600203, 0.26296708, -0.5451872, 0, 0.90069824, 0.43444526, 0.6052939, -0.34581932, 0.7169576, -21.606232, 16.423355, 39.03188)
+current = true
+script = ExtResource("1_njq35")
+metadata/_custom_type_script = "uid://clh3p4osx4i55"
+
+[node name="TaxiSync" type="Node" parent="." unique_id=803159187]
+script = ExtResource("2_vqn4r")
+speed_up = 6.0
+onnx_model_path = "E:\\Godot\\Project\\AutoFollow\\rl\\models\\Multi_0.onnx"
+
+[node name="OmniLight3D" type="OmniLight3D" parent="." unique_id=1447025421]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 274.6703, 239.59625, 0)
+light_energy = 13.301
+omni_range = 1193.866
+omni_attenuation = 0.698
+
+[node name="FlatWallTrainArena" parent="." unique_id=561966501 instance=ExtResource("3_lkmdw")]
+
+[node name="FlatWallTrainArena2" parent="." unique_id=523330177 instance=ExtResource("4_wos76")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 160.36517, 0, 0)
+
+[node name="FlatWallTrainArena3" parent="." unique_id=1253454729 instance=ExtResource("5_rfs72")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 160.46588, 0, -151.18503)
+
+[node name="FlatWallTrainArena4" parent="." unique_id=1001541141 instance=ExtResource("6_cu0cw")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -151.61621)

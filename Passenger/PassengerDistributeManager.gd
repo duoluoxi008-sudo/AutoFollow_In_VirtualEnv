@@ -37,9 +37,42 @@ func setup(m: PassengerManager) -> void:
 	manager = m
 
 
-## 竞争派单：从 agent 视角挑打分最高的等待中乘客。
+## 竞争派单（**会写认领表**）：从 agent 视角挑打分最高的等待中乘客，并记到本公司名下。
+## 只有"业务层真的要去接"的路径才该调它 —— 观测/传感器请用 peek_best_target_for。
 ## 跨公司纯竞争；同公司协作（cooperative_within_fleet）时会避开队友已认领的乘客。
+#expose
 func pick_best_target_for(agent: Node3D) -> Passenger:
+	var best := _best_target_for(agent)
+	if best != null and cooperative_within_fleet:
+		var company := _get_company_of(agent)
+		var pid := best.get_instance_id()
+		if not _reservations.has(pid):
+			_reservations[pid] = {}
+		_reservations[pid][company] = true
+	return best
+
+
+## 只读派单查询：筛选逻辑与 pick_best_target_for 完全一致，但**不写认领表**。
+##
+## ⚠️ 为什么必须有它 —— 这是一个真实踩过的死锁：
+## `PassengerPositionSensor3D._resolve_target()` 在本车 `current_target` 为空时会
+## 来这里兜底问一次"该去哪"。如果那次调用走的是写认领表的版本，就会发生：
+##   1. 传感器问一次 → 认领表记下 (乘客P, 公司0) → 返回 P
+##      （这一帧调试线指向 P，看起来一切正常）
+##   2. 业务层 `acquire_target()` 随后再问 → P 已被本公司认领 → 跳过 → null
+##      → `current_target` 永远是 null → **这台车永远接不到这个乘客**
+##   3. 之后传感器再问 → P 仍被认领 → 同样返回 null → **连调试线都不画了**
+##
+## 外部表现正是："同样空车、没载客，有的车传感器指向乘客、有的什么都不显示"，
+## 而后者会一直绕圈 —— 奖励里没有目标 ⟹ 每帧奖励恒定 ⟹ 梯度为 0 ⟹ 永远学不动。
+## 结论：**读一次观测不该改变派单状态。**
+#expose
+func peek_best_target_for(agent: Node3D) -> Passenger:
+	return _best_target_for(agent)
+
+
+## 打分主循环（纯查询，无副作用）。
+func _best_target_for(agent: Node3D) -> Passenger:
 	if manager == null or agent == null:
 		return null
 
@@ -62,27 +95,24 @@ func pick_best_target_for(agent: Node3D) -> Passenger:
 		if score < best_score:
 			best_score = score
 			best = p
-
-	if best != null and cooperative_within_fleet:
-		var pid2 := best.get_instance_id()
-		if not _reservations.has(pid2):
-			_reservations[pid2] = {}
-		_reservations[pid2][company] = true
 	return best
 
 
 ## 兼容旧接口：等价于 pick_best_target_for。
+#expose
 func assign_passenger(taxi: Node3D) -> Passenger:
 	return pick_best_target_for(taxi)
 
 
 ## 乘客上/下车、被移除后，清理它的认领记录。
+#expose
 func release(passenger: Passenger) -> void:
 	if passenger != null and is_instance_valid(passenger):
 		_reservations.erase(passenger.get_instance_id())
 
 
 ## 兼容旧接口：仅当同公司协作且该乘客已被本车公司认领时为 true（用于查询）。
+#expose
 func is_claimed(passenger: Passenger) -> bool:
 	return passenger != null and is_instance_valid(passenger) \
 		and _reservations.has(passenger.get_instance_id()) \

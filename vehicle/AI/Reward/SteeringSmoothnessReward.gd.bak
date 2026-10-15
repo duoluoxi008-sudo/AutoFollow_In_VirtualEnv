@@ -1,0 +1,89 @@
+extends RewardFunction3D
+class_name SteeringSmoothnessReward
+
+# ============================================================================
+# SteeringSmoothnessReward —— 惩罚"方向盘抖动"（每帧 |Δ转向角|）
+#
+#     r = -weight * |ratio_t − ratio_{t−1}|,   ratio = current_steer_rad / max_steer_rad
+#
+# ## 为什么惩罚的是"变化率"而不是"转向角本身"
+#
+# 匀速转弯（方向盘保持一个角度不动）是**免费**的，只有来回猛打才扣分。
+# 这正是"限制频繁变动轮胎方向"的语义。若改成惩罚 |ratio| 本身，就变成
+# "不许转弯"，策略会为了不转弯而放弃去接客 —— 那是反向优化。
+#
+# ## 为什么用物理转向角，而不是策略的 action
+#
+#   - action 每 env step（= 8 个物理帧）才变一次，逐帧差分会有 7/8 帧恒为 0，
+#     量级被稀释 8 倍，权重没法凭直觉调；而且车辆侧还有输入滤波/速率限制，
+#     action 的变化量 ≠ 轮胎实际转了多少。
+#   - `MMTSteeringComponent.current_steer_rad` 已含速率限制（110/160 deg/s）
+#     与回正，天然就是"轮胎实际转向快慢"，与车辆的物理表现一一对应。
+#
+# ## 量级参考（mmt_steering_component 默认：max_steer=35°、rate=110°/s）
+#
+#   随机策略一直在打方向 → |Δratio| ≈ 110/60/35 ≈ 0.05 /帧 → weight=0.05 时 ≈ -0.0025/帧
+#   正常匀速转弯         → |Δratio| ≈ 0.01      /帧 → ≈ -0.0005/帧
+#
+# 所以 weight 的可调范围大致 0.02 ~ 0.2。注意它和
+# `DenseNavigationReward.rw_step`（-0.01/帧）是同一量级：调太大策略会
+# "为了不打方向而不去接客"（宁可吃着时间代价原地不动），那就过犹不及了。
+#
+# ## 与"初始探索噪声"的分工
+#
+# 本奖励是**长期偏好**（靠梯度慢慢学出来，且跨阶段都该保留）。
+# 训练一开始"猛打方向"的直接原因是 PPO 连续动作的初始 std=1.0（近似均匀随机），
+# 那个要靠 Python 侧的 log_std_init / 动作均值偏置去治（见 rl/train.py）。
+# 两者互补：前者治"一开始就疯"，后者治"学会了还是抖"。
+# ============================================================================
+
+@export_category("权重")
+## 转向抖动的每帧惩罚系数（0 = 关闭）
+@export var weight: float = 0.05
+
+
+## 被注入的出租车控制器（RewardManager._ready() 调用）
+var car_ref: AITaxiController
+
+## 上一物理帧的转向比，约 [-1, 1]
+var _prev_ratio: float = 0.0
+## reset 后第一帧只建立基线、不施加惩罚
+## （否则会把"出生时就打着的方向盘"当成一次抖动）
+var _need_baseline: bool = true
+
+
+func get_car_ref(ref_car: AITaxiController) -> void:
+	car_ref = ref_car
+
+
+func get_reward() -> float:
+	var ratio := _steer_ratio()
+
+	if _need_baseline:
+		_prev_ratio = ratio
+		_need_baseline = false
+		return 0.0
+
+	var jerk := absf(ratio - _prev_ratio)
+	_prev_ratio = ratio
+	return -weight * jerk
+
+
+func reset() -> void:
+	_prev_ratio = 0.0
+	_need_baseline = true
+
+
+## 当前转向角 / 最大转向角。
+## 注意高速时实际可用角会被 `speed_sensitivity` 压小（助力转向），这里仍按
+## 机械最大角归一化 —— 目的是"抖动幅度"，不需要跟着速度变尺度。
+func _steer_ratio() -> float:
+	if car_ref == null or car_ref._vehicle == null or not is_instance_valid(car_ref._vehicle):
+		return 0.0
+	var st = car_ref._vehicle.steering
+	if st == null:
+		return 0.0
+	var max_deg: float = float(st.max_steer_angle_deg)
+	if max_deg <= 0.0:
+		return 0.0
+	return float(st.current_steer_rad) / deg_to_rad(max_deg)

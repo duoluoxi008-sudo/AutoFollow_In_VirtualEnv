@@ -1,0 +1,6 @@
+[gd_resource type="Resource" script_class="AIParameterEntry" format=3 uid="uid://ds8ikrd0u83wq"]
+
+[ext_resource type="Script" uid="uid://bq0cp66txq3og" path="res://vehicle/AI/Parameter/AIParameterEntry.gd" id="1_xrnxs"]
+
+[resource]
+script = ExtResource("1_xrnxs")

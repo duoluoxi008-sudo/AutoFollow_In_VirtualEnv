@@ -1,0 +1,249 @@
+extends Node
+class_name VehicleStateResetter
+
+# ============================================================================
+# VehicleStateResetter —— 车辆/控制器状态复位组件（与 RL 无关）
+#
+# 把"重置车辆与控制器状态"这件事从 AITaxiController 里抽出来，做成任何车都能挂的组件：
+#
+#   1. capture_spawn_transform()          记录出生位姿（生成器摆放完成后调用，或延迟兜底）
+#   2. reset_input_state()                清空共享输入对象（MMTVehicleInputState）
+#   3. reset_vehicle_state()              清空发动机/变速箱/转向/输入滤波/TCS/轮胎的内部状态
+#   4. respawn_at_random_spawn_point()    向 VehicleSpawnManager 领一个空闲出生点就地传送
+#   5. reset_all()                        以上一把梭（回合重置 / 重新部署都调它）
+#
+# 为什么要逐字段清零：MMT 各组件没有 reset() 接口，而这些状态（挡位、转速、轮胎刷毛形变、
+# 转向角）会跨回合残留，让新回合的首帧观测带着上一段的历史。
+#
+# ⚠️ 车辆实例**不销毁、不重建**：训练时重建会破坏 godot_rl 的 agent 登记，
+#    所以这里只做"就地传送 + 状态清零"。
+# ============================================================================
+
+## 关联车辆。留空则自动向上查找 MMTVehicleBody。
+@export var vehicle: MMTVehicleBody
+## 出生位姿记录：找不到时是否回落到"车辆当前位姿"
+@export var use_current_pose_as_fallback: bool = true
+
+## 出生位姿（全局坐标）
+var spawn_transform: Transform3D = Transform3D.IDENTITY
+## 是否已经记到过有效出生位姿
+var has_spawn_transform: bool = false
+
+
+func _ready() -> void:
+	_resolve_vehicle()
+	# 先立即记一份（保证任何时刻都有有效值），再 deferred 重记一次。
+	#
+	# 原因：VehicleSpawner 是"先 add_child 再设 global_transform"，而 add_child()
+	# 会**同步**触发整棵子树的 _ready()，那一刻车还停在 .tscn 的出厂位姿
+	# （根节点无 transform → 单位矩阵）。若只在这里直接记录，出生位姿会变成世界原点，
+	# 重置就会把所有车传送到原点（表现为"车辆消失"）。
+	# VehicleSpawner 摆放完成后会显式再调一次 capture_spawn_transform()；
+	# 这里的 deferred 调用是兜底（车由场景静态摆放、或走了别的生成路径时）。
+	capture_spawn_transform()
+	capture_spawn_transform.call_deferred()
+
+
+# ----------------------------------------------------------------------------
+# 出生位姿
+# ----------------------------------------------------------------------------
+
+## 记录车辆当前位姿为"出生位姿"（全局坐标）。
+func capture_spawn_transform() -> void:
+	if not has_vehicle():
+		return
+	spawn_transform = vehicle.global_transform
+	has_spawn_transform = true
+
+
+## 取出生位姿；没记录过时按配置回落到车辆当前位姿。
+func get_spawn_transform() -> Transform3D:
+	if has_spawn_transform:
+		return spawn_transform
+	if use_current_pose_as_fallback and has_vehicle():
+		return vehicle.global_transform
+	return Transform3D.IDENTITY
+
+
+# ----------------------------------------------------------------------------
+# 复位
+# ----------------------------------------------------------------------------
+
+## 一把梭：清空车辆/输入状态 + 就地在随机出生点重生。
+func reset_all() -> void:
+	respawn_at_random_spawn_point()
+
+
+## 从 VehicleSpawnManager 的生成点占用表里随机领一个空闲出生点，就地传送过去。
+## 管理器缺失（或一个空闲点都没有）时回落到出生位姿，绝不把车丢到原点。
+func respawn_at_random_spawn_point() -> void:
+	if not has_vehicle():
+		return
+
+	var pose := get_spawn_transform()
+	var mgr := get_vehicle_spawn_manager()
+	if mgr != null:
+		pose = mgr.claim_spawn_transform(vehicle, pose)
+
+	vehicle.global_transform = pose
+	vehicle.linear_velocity = Vector3.ZERO
+	vehicle.angular_velocity = Vector3.ZERO
+
+	reset_input_state()
+	reset_vehicle_state()
+
+
+## 清空共享输入对象（油门/刹车/转向/换挡脉冲）。
+func reset_input_state() -> void:
+	if not has_vehicle():
+		return
+	var state := _get_input_state()
+	if state != null:
+		state.reset()
+
+
+## 复位车辆动力总成、转向与轮胎的内部状态。
+func reset_vehicle_state() -> void:
+	if not has_vehicle():
+		return
+
+	# 发动机：回到怠速（比 0 更稳，不会出现熄火/抖动）
+	if vehicle.engine != null:
+		vehicle.engine.current_rpm = vehicle.engine.idle_rpm
+		vehicle.engine.throttle = 0.0
+
+	# 变速箱：挂回 1 挡、离合结合、清掉换挡与 TCU 的历史
+	if vehicle.gearbox != null:
+		var gb: MMTGearboxComponentTEMP = vehicle.gearbox
+		gb.current_gear_index = 1
+		gb._target_gear_index = 1
+		gb.shift_timer = 0.0
+		gb.clutch_engagement = 1.0
+		gb._current_tc_multiplier = 1.0
+		gb._last_throttle_intent = 0.0
+		gb._post_shift_timer = 0.0
+		gb._last_forward_speed = 0.0
+
+	# 转向回正
+	if vehicle.steering != null:
+		var st: MMTSteeringComponent = vehicle.steering
+		st.current_steer_rad = 0.0
+		st._current_steer_deg = 0.0
+
+	# 输入平滑与 TCS 干预状态
+	if vehicle.input_filter != null:
+		var flt: MMTInputFilterComponent = vehicle.input_filter
+		flt.smoothed_throttle = 0.0
+		flt.smoothed_brake = 0.0
+		flt.tcs_throttle_limit = 1.0
+		flt._ecu_limited_throttle = 0.0
+	if vehicle.tcs != null:
+		var tcs: MMTTCSComponent = vehicle.tcs
+		tcs.is_active = false
+		tcs.current_slip_ratio = 0.0
+		tcs._throttle_limit = 1.0
+
+	# 车轮：清轮胎刷毛/受力状态与轮速（否则起步瞬间会带着上一段的轮胎形变）
+	var wheels: Array = [vehicle.wheel_fl, vehicle.wheel_fr, vehicle.wheel_rl, vehicle.wheel_rr]
+	for w in wheels:
+		if w == null or not is_instance_valid(w):
+			continue
+		var wheel: MMTWheelComponent = w
+		wheel.brake_input = 0.0
+		wheel.wheel_rpm = 0.0
+		wheel.spin_vel = 0.0
+		wheel.drive_torque = 0.0
+		wheel.load_torque = 0.0
+		wheel.wheel_long_vel = 0.0
+		wheel.arb_force = 0.0
+		wheel._tire_deflection = Vector2.ZERO
+		wheel._is_wheel_locked = false
+
+
+# ----------------------------------------------------------------------------
+# 查询/内部
+# ----------------------------------------------------------------------------
+
+func has_vehicle() -> bool:
+	return vehicle != null and is_instance_valid(vehicle)
+
+
+func get_vehicle() -> MMTVehicleBody:
+	return vehicle
+
+
+## 取得"本车所属 arena"的车辆生成管理器。
+##
+## ⚠️ 多 arena 同进程时必须按 arena 取，不能用全局组：
+## `get_first_node_in_group("vehicle_spawn_manager")` 只会返回第一个场地的管理器，
+## 于是所有 arena 的车在重置时都会 `claim_spawn_transform()` 到 **arena 1 的出生点**，
+## 三个场地的车会叠在一起 —— 并行 arena 直接失效。
+##
+## 兜底保留全局查找，兼容"没有 TrainingArena 的旧场景/单场景"用法。
+func get_vehicle_spawn_manager() -> VehicleSpawnManager:
+	var arena := TrainingArena.of(self)
+	if arena != null:
+		var m := arena.get_vehicle_spawn_manager()
+		if m != null:
+			return m
+	var tree := get_tree()
+	if tree == null:
+		return null
+	return tree.get_first_node_in_group("vehicle_spawn_manager") as VehicleSpawnManager
+
+
+## 取车辆当前共享的输入对象。AI 控制器注入的与玩家控制器注入的是同一个对象，
+## 所以这里清一次就够了。取不到（旧版车辆/未注入）时返回 null。
+func _get_input_state() -> MMTVehicleInputState:
+	if not has_vehicle():
+		return null
+	if vehicle.has_method("get_active_input"):
+		var st: Variant = vehicle.call("get_active_input")
+		if st is MMTVehicleInputState:
+			return st as MMTVehicleInputState
+	return null
+
+
+func _resolve_vehicle() -> void:
+	if vehicle != null and is_instance_valid(vehicle):
+		return
+	vehicle = find_vehicle_of(self)
+
+
+# ----------------------------------------------------------------------------
+# 静态工具
+# ----------------------------------------------------------------------------
+
+## 从任意节点向上找到所属的 MMTVehicleBody。
+static func find_vehicle_of(node: Node) -> MMTVehicleBody:
+	var n: Node = node
+	while n != null:
+		if n is MMTVehicleBody:
+			return n as MMTVehicleBody
+		n = n.get_parent()
+	return null
+
+
+## 找到 node 所属车辆上的复位组件（node 自己就是组件时直接返回）。找不到返回 null。
+static func find_for(node: Node) -> VehicleStateResetter:
+	if node == null or not is_instance_valid(node):
+		return null
+	if node is VehicleStateResetter:
+		return node as VehicleStateResetter
+	var v := find_vehicle_of(node)
+	if v == null:
+		return null
+	return find_in_subtree(v)
+
+
+## 在子树里深度优先查找复位组件。
+static func find_in_subtree(root: Node) -> VehicleStateResetter:
+	if root == null:
+		return null
+	for child in root.get_children():
+		if child is VehicleStateResetter:
+			return child as VehicleStateResetter
+		var found := find_in_subtree(child)
+		if found != null:
+			return found
+	return null

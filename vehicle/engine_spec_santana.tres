@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="EngineSpec" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://vehicle/engine_spec.gd" id="1_spec"]
+[ext_resource type="Curve" uid="uid://bl0e8y6sxp8wl" path="res://vehicle/sedan_santana_torque_curve.tres" id="2_curve"]
+
+[resource]
+script = ExtResource("1_spec")
+idle_rpm = 800.0
+max_rpm = 6000.0
+rev_limiter_rpm = 6400.0
+max_torque = 200.0
+torque_curve = ExtResource("2_curve")
+engine_drag_base = 10.0
+engine_drag_multiplier = 0.008
+engine_inertia = 0.15

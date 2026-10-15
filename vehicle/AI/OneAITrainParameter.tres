@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="AIParameterEntry" format=3 uid="uid://dqmjdfh0ov12d"]
+
+[ext_resource type="Script" uid="uid://bq0cp66txq3og" path="res://vehicle/AI/Parameter/AIParameterEntry.gd" id="1_qrqjc"]
+
+[resource]
+script = ExtResource("1_qrqjc")
+company_id = 1
+rw_speed = 0.25
+success_dist = 11.0
+pickup_radius = 5.0
+dropoff_radius = 10.0
+stop_speed_threshold = 5.0

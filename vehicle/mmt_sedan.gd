@@ -68,6 +68,12 @@ func _register_components(node: Node) -> void:
 func set_controller_input(input_state: MMTVehicleInputState) -> void:
 	_active_input = input_state
 
+# 读取当前共享的输入状态对象。
+# 供 VehicleStateResetter 之类的通用组件复位输入（AI 控制器与玩家控制器注入的是
+# 同一个对象，所以组件不需要知道"现在是谁在开车"）。
+func get_active_input() -> MMTVehicleInputState:
+	return _active_input
+
 # 暴露车辆的运行时状态，供 AI 控制器或 HUD 使用。
 func get_vehicle_state() -> Dictionary:
 	return {
@@ -86,6 +92,7 @@ func _any_wheel_grounded() -> bool:
 
 # --- 物理主循环 ---
 # 本函数只从 _active_input 读取数据，不调用任何 Input.* 方法。
+#expose
 func _physics_process(delta: float) -> void:
 	var inp := _active_input
 

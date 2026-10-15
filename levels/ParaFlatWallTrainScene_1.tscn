@@ -1,0 +1,45 @@
+[gd_scene format=3 uid="uid://dxrhgld0piop0"]
+
+[ext_resource type="Script" uid="uid://clh3p4osx4i55" path="res://misc/free_fly_camera.gd" id="1_s1x7k"]
+[ext_resource type="Script" uid="uid://dgty4hy4npql1" path="res://vehicle/AI/sync_taxi.gd" id="2_khauq"]
+[ext_resource type="PackedScene" uid="uid://iy87mwwwbh20" path="res://levels/FlatWallTrainArena.tscn" id="3_rof12"]
+[ext_resource type="PackedScene" uid="uid://t44h24u4ybqy" path="res://levels/FlatWallTrainArena_1.tscn" id="4_v2ppm"]
+[ext_resource type="PackedScene" uid="uid://bijaf18u7l3iy" path="res://levels/FlatWallTrainArena_2.tscn" id="5_on825"]
+[ext_resource type="PackedScene" uid="uid://ckal1317njur0" path="res://levels/FlatWallTrainArena_3.tscn" id="6_g2v7w"]
+[ext_resource type="PackedScene" uid="uid://dorre8l6k8jq4" path="res://levels/FlatWallTrainArena_4.tscn" id="7_jgbms"]
+[ext_resource type="PackedScene" uid="uid://it0xsuxmukh5" path="res://levels/FlatWallTrainArena_5.tscn" id="8_2y4h2"]
+
+[node name="ParaFlatTrainScene" type="Node3D" unique_id=1721718675]
+
+[node name="FreeFlyCamera" type="Camera3D" parent="." unique_id=350470744]
+transform = Transform3D(0.79600203, 0.26296708, -0.5451872, 0, 0.90069824, 0.43444526, 0.6052939, -0.34581932, 0.7169576, -21.606232, 16.423355, 39.03188)
+current = true
+script = ExtResource("1_s1x7k")
+metadata/_custom_type_script = "uid://clh3p4osx4i55"
+
+[node name="TaxiSync" type="Node" parent="." unique_id=803159187]
+script = ExtResource("2_khauq")
+speed_up = 4.0
+
+[node name="OmniLight3D" type="OmniLight3D" parent="." unique_id=1447025421]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 274.6703, 239.59625, 0)
+light_energy = 13.301
+omni_range = 1193.866
+omni_attenuation = 0.698
+
+[node name="FlatWallTrainArena" parent="." unique_id=561966501 instance=ExtResource("3_rof12")]
+
+[node name="FlatWallTrainArena2" parent="." unique_id=334084336 instance=ExtResource("4_v2ppm")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 160.36517, 0, 0)
+
+[node name="FlatWallTrainArena3" parent="." unique_id=1385424446 instance=ExtResource("5_on825")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 160.46588, 0, -151.18503)
+
+[node name="FlatWallTrainArena4" parent="." unique_id=2115400337 instance=ExtResource("6_g2v7w")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -151.61621)
+
+[node name="FlatWallTrainArena5" parent="." unique_id=1351777993 instance=ExtResource("7_jgbms")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -302.35913)
+
+[node name="FlatWallTrainArena6" parent="." unique_id=1064052177 instance=ExtResource("8_2y4h2")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 160.20935, 0, -302.09464)

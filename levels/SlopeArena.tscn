@@ -1,0 +1,117 @@
+[gd_scene format=3 uid="uid://pn0kjuskaniw"]
+
+[ext_resource type="PackedScene" uid="uid://cdt34tnbj2x2f" path="res://levels/Wall.tscn" id="1_4o4lg"]
+[ext_resource type="PackedScene" uid="uid://1pn6ha8ckrx5" path="res://vehicle/mmt_sedan.tscn" id="2_6yiul"]
+[ext_resource type="Script" uid="uid://csrvics7w1y82" path="res://vehicle/mmt_player_controller.gd" id="3_ukg2f"]
+[ext_resource type="Environment" uid="uid://fu26fprl3d5v" path="res://environments/default_environment.tres" id="4_ukg2f"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_6jk8d"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_ek7y0"]
+size = Vector3(200, 0.2, 200)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_6jk8d"]
+size = Vector3(1, 50, 200)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_xpcii"]
+albedo_color = Color(0.3293, 0.89, 0.39471507, 1)
+
+[sub_resource type="SphereMesh" id="SphereMesh_ek7y0"]
+material = SubResource("StandardMaterial3D_xpcii")
+
+[node name="SlopeTrainArena" type="Node3D" unique_id=561966501]
+
+[node name="Ground" type="StaticBody3D" parent="." unique_id=174248256]
+collision_mask = 28
+
+[node name="Ground" type="MeshInstance3D" parent="Ground" unique_id=1882501348]
+transform = Transform3D(100, 0, 0, 0, 0.2, 0, 0, 0, 100, 0, 0, 0)
+mesh = SubResource("BoxMesh_6jk8d")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Ground" unique_id=1572117191]
+shape = SubResource("BoxShape3D_ek7y0")
+
+[node name="Wall0" type="StaticBody3D" parent="." unique_id=814684598]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -50.5, 0, 0)
+collision_layer = 2
+collision_mask = 28
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Wall0" unique_id=494366067]
+shape = SubResource("BoxShape3D_6jk8d")
+
+[node name="Wall2" type="StaticBody3D" parent="." unique_id=336422864]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 0, 0, -100.5)
+collision_layer = 2
+collision_mask = 28
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Wall2" unique_id=1369865386]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -50.5, 0, 0)
+shape = SubResource("BoxShape3D_6jk8d")
+
+[node name="Wall3" type="StaticBody3D" parent="." unique_id=435732581]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 0, 0, 50.5)
+collision_layer = 2
+collision_mask = 28
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Wall3" unique_id=1717957694]
+shape = SubResource("BoxShape3D_6jk8d")
+
+[node name="Wall1" type="StaticBody3D" parent="." unique_id=643356048]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 50.5, 0, 0)
+collision_layer = 2
+collision_mask = 28
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Wall1" unique_id=980797166]
+shape = SubResource("BoxShape3D_6jk8d")
+
+[node name="Panel_0" parent="." unique_id=1165971898 instance=ExtResource("1_4o4lg")]
+transform = Transform3D(-0.7672342, 0.46992767, 0.43648577, 1.366973e-08, 0.68055516, -0.73269665, -0.6413672, -0.56215, -0.5221452, -17.498852, 2.3450918, 18.36874)
+
+[node name="Panel_1" parent="." unique_id=1717659626 instance=ExtResource("1_4o4lg")]
+transform = Transform3D(-0.7672342, 0.46992767, 0.43648577, 1.366973e-08, 0.68055516, -0.73269665, -0.6413672, -0.56215, -0.5221452, 7.355693, 1.918294, -8.450277)
+
+[node name="Panel_2" parent="." unique_id=1224593745 instance=ExtResource("1_4o4lg")]
+transform = Transform3D(-0.7671652, 0.64144975, -2.8038656e-08, 0, -4.371139e-08, -0.9999999, -0.6414498, -0.76716506, 3.3533848e-08, -6.6058445, 9.125307, 5.3508863)
+
+[node name="Panel_7" parent="." unique_id=1699165890 instance=ExtResource("1_4o4lg")]
+transform = Transform3D(-0.7671652, 0.64144975, -2.8038656e-08, 0, -4.371139e-08, -0.9999999, -0.6414498, -0.76716506, 3.3533848e-08, 5.1321125, 9.125307, -8.615243)
+
+[node name="Panel_3" parent="." unique_id=1699501665 instance=ExtResource("1_4o4lg")]
+transform = Transform3D(0.3748291, 0, 0.92709386, 0, 0.9999999, 0, -0.92709386, 0, 0.37482905, 11.547258, 1.5753202, 14.673763)
+
+[node name="Panel_4" parent="." unique_id=1095416505 instance=ExtResource("1_4o4lg")]
+transform = Transform3D(1, 0, 0, 0, 0.99999994, 0, 0, 0, 0.99999994, -27.466871, 6.00455, -21.403603)
+
+[node name="Panel_5" parent="." unique_id=595062012 instance=ExtResource("1_4o4lg")]
+transform = Transform3D(0.60070133, 0, -0.79947346, 0, 0.9999999, 0, 0.79947346, 0, 0.6007012, -11.0508175, 9.8779335, -19.182848)
+
+[node name="Panel_6" parent="." unique_id=261387023 instance=ExtResource("1_4o4lg")]
+transform = Transform3D(1, 0, 0, 0, 0.99999994, 0, 0, 0, 0.99999994, -37.140617, 10.100005, -40.645752)
+
+[node name="Panel_8" parent="." unique_id=546220909 instance=ExtResource("1_4o4lg")]
+transform = Transform3D(0.03849445, 0, -0.99925876, 0, 0.9999999, 0, 0.99925876, 0, 0.03849444, 11.941843, 7.8723707, 39.165028)
+
+[node name="StartPoint" type="Marker3D" parent="." unique_id=478981585]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -38.19107, 0.22786427, 37.327682)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="StartPoint" unique_id=1300009336]
+mesh = SubResource("SphereMesh_ek7y0")
+
+[node name="EndPoint" type="Marker3D" parent="." unique_id=1080505366]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 30.741707, 0.22786427, -34.663845)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="EndPoint" unique_id=1770191998]
+mesh = SubResource("SphereMesh_ek7y0")
+
+[node name="MMTSedan" parent="." unique_id=1500364419 instance=ExtResource("2_6yiul")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -38.11709, 2.5, 38.630615)
+
+[node name="MMTPlayerController" type="Node" parent="." unique_id=524150968 node_paths=PackedStringArray("target_vehicle")]
+script = ExtResource("3_ukg2f")
+target_vehicle = NodePath("../MMTSedan")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=281062345]
+environment = ExtResource("4_ukg2f")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=1680071105]
+transform = Transform3D(1, 0, 0, 0, -0.42439327, 0.905478, 0, -0.905478, -0.42439327, 0, 66.749954, 0)

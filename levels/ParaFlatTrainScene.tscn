@@ -1,0 +1,40 @@
+[gd_scene format=3 uid="uid://7mf23rgdhh1g"]
+
+[ext_resource type="Script" uid="uid://clh3p4osx4i55" path="res://misc/free_fly_camera.gd" id="1_jhmun"]
+[ext_resource type="Script" uid="uid://dgty4hy4npql1" path="res://vehicle/AI/sync_taxi.gd" id="2_15fmc"]
+[ext_resource type="PackedScene" uid="uid://ccqpciqbduday" path="res://levels/FlatTrainArena.tscn" id="3_15fmc"]
+
+[node name="ParaFlatTrainScene" type="Node3D" unique_id=1721718675]
+
+[node name="FreeFlyCamera" type="Camera3D" parent="." unique_id=350470744]
+transform = Transform3D(0.79600203, 0.26296708, -0.5451872, 0, 0.90069824, 0.43444526, 0.6052939, -0.34581932, 0.7169576, -21.606232, 16.423355, 39.03188)
+current = true
+script = ExtResource("1_jhmun")
+metadata/_custom_type_script = "uid://clh3p4osx4i55"
+
+[node name="TaxiSync" type="Node" parent="." unique_id=803159187]
+script = ExtResource("2_15fmc")
+speed_up = 4.0
+
+[node name="OmniLight3D" type="OmniLight3D" parent="." unique_id=1447025421]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 274.6703, 239.59625, 0)
+light_energy = 13.301
+omni_range = 1193.866
+omni_attenuation = 0.698
+
+[node name="FlatTrainArena" parent="." unique_id=561966501 instance=ExtResource("3_15fmc")]
+
+[node name="FlatTrainArena3" parent="." unique_id=1780304104 instance=ExtResource("3_15fmc")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 160.36517, 0, 0)
+
+[node name="FlatTrainArena4" parent="." unique_id=138823139 instance=ExtResource("3_15fmc")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 160.46588, 0, -151.18503)
+
+[node name="FlatTrainArena5" parent="." unique_id=1779332227 instance=ExtResource("3_15fmc")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -302.35913)
+
+[node name="FlatTrainArena6" parent="." unique_id=997363065 instance=ExtResource("3_15fmc")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 160.20935, 0, -302.09464)
+
+[node name="FlatTrainArena2" parent="." unique_id=1039939741 instance=ExtResource("3_15fmc")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -151.61621)
